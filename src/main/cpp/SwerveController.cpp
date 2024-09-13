@@ -16,7 +16,6 @@
 SwerveController::SwerveController(InputTest *input)
 {
     this->input_system = input;
-    new ControlChannel<int>(0);
     return;
 }
 

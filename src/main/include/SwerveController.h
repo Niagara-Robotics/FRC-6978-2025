@@ -6,6 +6,7 @@
 #include <list>
 #include <frc/Joystick.h>
 #include "InputTest.h"
+#include "ControlChannel.h"
 
 /**SwerveController manages kinematics and output to all swerve modules
  * SwerveManager owns the SwerveController
@@ -136,6 +137,8 @@ private:
     std::mutex target_mutex;
 
     InputTest *input_system;
+
+    controlchannel::ControlChannel<frc::ChassisSpeeds> planar_velocity_channel = controlchannel::ControlChannel(frc::ChassisSpeeds());
 
 public:
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
