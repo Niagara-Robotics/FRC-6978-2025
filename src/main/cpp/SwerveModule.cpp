@@ -23,6 +23,11 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
     steering_position = &steering_encoder->GetAbsolutePosition();
     steering_position->SetUpdateFrequency(1000_Hz, 2_s); //maximum update frequency
 
+    relative_steering_position = &steering_encoder->GetPosition();
+    relative_steering_position->SetUpdateFrequency(1000_Hz, 2_s);
+
+    last_steering_relative_position = relative_steering_position->GetValue();
+
     steering_velocity = &steering_encoder->GetVelocity();
     steering_velocity->SetUpdateFrequency(1000_Hz, 2_s);
 
@@ -36,7 +41,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
     drive_position->SetUpdateFrequency(1_kHz, 2_s);
 
     drive_velocity = &drive_motor->GetVelocity();
-    drive_velocity->SetUpdateFrequency(1_kHz, 2_s);
+    drive_velocity->SetUpdateFrequency(100_Hz, 2_s);
 
     drive_control = new controls::VelocityVoltage(0_tps);
     drive_control->UpdateFreqHz = 1000_Hz; //synchronous request
@@ -118,6 +123,17 @@ void SwerveModule::apply(frc::SwerveModuleState target_state)
     //frc::SmartDashboard::PutNumber(id+"/steer_apply_time", steer_apply_time.count());
     //frc::SmartDashboard::PutNumber(id+"/drive_calc_time", drive_calc_time.count());
     //frc::SmartDashboard::PutNumber(id+"/drive_apply_time", drive_apply_time.count());
+}
+
+frc::SwerveModulePosition SwerveModule::get_position() {
+    if(BaseStatusSignal::RefreshAll(*steering_position, *drive_position, *relative_steering_position) != 0) {
+        this->state = 10;
+    }
+
+    //correct the drive position
+    drive_position_correction += ((relative_steering_position->GetValue() - last_steering_relative_position) * ((config.drive_inverted)? -config.couple_ratio : config.couple_ratio));
+
+    return frc::SwerveModulePosition{(drive_position->GetValue() + drive_position_correction) / config.drive_ratio * (wheel_circumference / 1_tr), frc::Rotation2d(steering_position->GetValue())};
 }
 
 void SwerveModule::test_couple() {

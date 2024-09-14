@@ -92,6 +92,7 @@ private:
     ctre::phoenix6::hardware::TalonFX *steer_motor;
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> *steering_position;
+    ctre::phoenix6::StatusSignal<units::angle::turn_t> *relative_steering_position;
     ctre::phoenix6::StatusSignal<units::angular_velocity::turns_per_second_t> *steering_velocity;
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> *drive_position;
@@ -104,6 +105,9 @@ private:
 
     SwerveModuleConfig config;
 
+    units::angle::turn_t last_steering_relative_position;
+    units::angle::turn_t drive_position_correction;
+
     void log(std::string message);
 
     int state;
@@ -115,6 +119,7 @@ public:
     SwerveModule(SwerveModuleConfig config, std::string id);
     void apply(frc::SwerveModuleState state);
     void test_couple();
+    frc::SwerveModulePosition get_position();
     int get_state();
     ~SwerveModule();
 };
