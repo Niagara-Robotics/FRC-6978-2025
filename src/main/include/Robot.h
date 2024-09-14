@@ -10,14 +10,18 @@
 #include <frc/smartdashboard/SendableChooser.h>
 #include "Scheduler.h"
 #include "SwerveController.h"
-#include "InputTest.h"
+#include "GyroInput.h"
+#include "DriverInput.h"
 
 class Robot: frc::RobotBase {
     public:
     void StartCompetition() override;
     void EndCompetition() override;
+    
     Scheduler *teleScheduler = new Scheduler("teleop");
-    InputTest *input_test = new InputTest();
+    GyroInput *input_test = new GyroInput();
     SwerveController *swerve_controller = new SwerveController(input_test);
+    DriverInput driver_input = DriverInput(swerve_controller->planar_velocity_channel.get_handle(), swerve_controller->twist_velocity_channel.get_handle());
+
     bool should_exit = false;
 };

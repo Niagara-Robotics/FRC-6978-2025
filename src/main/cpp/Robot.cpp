@@ -11,12 +11,13 @@
 #include <iostream>
 
 void Robot::StartCompetition() {
-  std::cout << "started";
-  teleScheduler->register_task(input_test);
-  teleScheduler->register_task(swerve_controller);
-  HAL_ObserveUserProgramStarting();
-  HAL_ObserveUserProgramDisabled();
-  std::cout << "started\n";
+    std::cout << "started";
+    teleScheduler->register_task(input_test);
+    teleScheduler->register_task(swerve_controller);
+    teleScheduler->register_task(&driver_input);
+    HAL_ObserveUserProgramStarting();
+    HAL_ObserveUserProgramDisabled();
+    std::cout << "started\n";
     while (true)
     {
         HAL_RefreshDSData();
@@ -27,19 +28,19 @@ void Robot::StartCompetition() {
         
         usleep(5000);
         if(should_exit) {
-          break;
+            break;
         }
     }
     teleScheduler->~Scheduler();
 }
 
 void Robot::EndCompetition() {
-  std::cout << "ended";
-  should_exit = true;
+    std::cout << "ended";
+    should_exit = true;
 }
 
 #ifndef RUNNING_FRC_TESTS
 int main() {
-  return frc::StartRobot<Robot>();
+    return frc::StartRobot<Robot>();
 }
 #endif

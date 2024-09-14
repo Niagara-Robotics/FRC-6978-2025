@@ -5,8 +5,18 @@
 #include <ctre/phoenix6/CANcoder.hpp>
 #include <list>
 #include <frc/Joystick.h>
-#include "InputTest.h"
+#include "GyroInput.h"
 #include "ControlChannel.h"
+
+class PlanarSwerveRequest
+{
+public:
+    units::velocity::meters_per_second_t x;
+    units::velocity::meters_per_second_t y;
+    bool robot_relative = false;
+
+    PlanarSwerveRequest(units::velocity::meters_per_second_t x, units::velocity::meters_per_second_t y): x(x), y(y) {}
+};
 
 /**SwerveController manages kinematics and output to all swerve modules
  * SwerveManager owns the SwerveController
@@ -128,27 +138,36 @@ private:
         new SwerveModule(back_right_config, "SMC4")
     };
 
+    wpi::array<frc::SwerveModulePosition, 4> last_reported_positions =
+    {
+        frc::SwerveModulePosition{0_m, frc::Rotation2d()},
+        frc::SwerveModulePosition{0_m, frc::Rotation2d()},
+        frc::SwerveModulePosition{0_m, frc::Rotation2d()},
+        frc::SwerveModulePosition{0_m, frc::Rotation2d()}
+    };
+
     frc::SwerveDriveKinematics<4> kinematics = frc::SwerveDriveKinematics<4>(module_positions);
-    //frc::SwerveDriveOdometry<4> odometry = frc::SwerveDriveOdometry<4>(kinematics, module_positions);
 
     frc::ChassisSpeeds target_chassis_speeds;
     bool field_relative_drive;
 
     std::mutex target_mutex;
 
-    InputTest *input_system;
+    GyroInput *input_system;
 
-    controlchannel::ControlChannel<frc::ChassisSpeeds> planar_velocity_channel = controlchannel::ControlChannel(frc::ChassisSpeeds());
 
 public:
+    controlchannel::ControlChannel<PlanarSwerveRequest> planar_velocity_channel = controlchannel::ControlChannel(PlanarSwerveRequest(0_mps, 0_mps));
+    controlchannel::ControlChannel<units::angular_velocity::radians_per_second_t> twist_velocity_channel = controlchannel::ControlChannel(0_rad_per_s);
+    
+    frc::SwerveDriveOdometry<4> odometry = frc::SwerveDriveOdometry<4>(kinematics, frc::Rotation2d(), last_reported_positions);
+
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
     void call() override;
     bool is_paused() override;
 
-    //void register_module();
-
     void notify_enabled(bool enabled);
 
-    SwerveController(InputTest *input);
+    SwerveController(GyroInput *input);
     ~SwerveController();
 };

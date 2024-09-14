@@ -10,7 +10,7 @@
 #include <ctre/phoenix6/TalonFX.hpp>
 #include <ctre/phoenix6/configs/Configs.hpp>
 
-class InputTest : public Task
+class GyroInput : public Task
 {
 private:
     frc::Joystick js = frc::Joystick(0);
@@ -26,8 +26,8 @@ public:
     bool is_paused() override;
     frc::Rotation2d get_last_rotation();
 
-    InputTest(/* args */);
-    ~InputTest();
+    GyroInput(/* args */);
+    ~GyroInput();
 };
 
 
