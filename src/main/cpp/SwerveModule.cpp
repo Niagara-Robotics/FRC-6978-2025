@@ -21,15 +21,17 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
     steering_encoder->GetConfigurator().Apply(config.steer_encoder_base_config);
 
     steering_position = &steering_encoder->GetAbsolutePosition();
-    steering_position->SetUpdateFrequency(1000_Hz, 2_s); //maximum update frequency
+    steering_position->SetUpdateFrequency(800_Hz, 2_s); //maximum update frequency
 
     relative_steering_position = &steering_encoder->GetPosition();
-    relative_steering_position->SetUpdateFrequency(1000_Hz, 2_s);
+    relative_steering_position->SetUpdateFrequency(800_Hz, 2_s);
 
     last_steering_relative_position = relative_steering_position->GetValue();
 
     steering_velocity = &steering_encoder->GetVelocity();
-    steering_velocity->SetUpdateFrequency(1000_Hz, 2_s);
+    steering_velocity->SetUpdateFrequency(800_Hz, 2_s);
+
+    steering_encoder->OptimizeBusUtilization();
 
     //setup drive motor
     config.drive_motor_base_config.MotorOutput.Inverted = config.drive_inverted?  signals::InvertedValue::Clockwise_Positive : signals::InvertedValue::CounterClockwise_Positive;
@@ -37,16 +39,20 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
     drive_motor = new hardware::TalonFX(config.drive_motor_id, "drive");
     drive_motor->GetConfigurator().Apply(config.drive_motor_base_config);
 
+    drive_motor->SetPosition(0_tr);
+
     drive_position = &drive_motor->GetPosition();
-    drive_position->SetUpdateFrequency(1_kHz, 2_s);
+    drive_position->SetUpdateFrequency(600_Hz, 2_s);
 
     drive_velocity = &drive_motor->GetVelocity();
-    drive_velocity->SetUpdateFrequency(100_Hz, 2_s);
+    drive_velocity->SetUpdateFrequency(0_Hz, 2_s);
 
     drive_control = new controls::VelocityVoltage(0_tps);
-    drive_control->UpdateFreqHz = 1000_Hz; //synchronous request
+    drive_control->UpdateFreqHz = 0_Hz; //synchronous request
 
     drive_motor->SetControl(*drive_control);
+
+    drive_motor->OptimizeBusUtilization();
 
     //setup steering motor
 
@@ -67,9 +73,11 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
     steer_motor->GetConfigurator().Apply(config.steer_motor_base_config);
 
     steer_control = new controls::MotionMagicVoltage(0_tr);
-    steer_control->UpdateFreqHz = 1000_Hz;
+    steer_control->UpdateFreqHz = 0_Hz;
 
     steer_motor->SetControl(*steer_control);
+
+    steer_motor->OptimizeBusUtilization();
 
     wheel_circumference = config.wheel_radius * M_PI * 2;
     std::cout << "wheel circumference " << wheel_circumference.value() << std::endl;
@@ -132,6 +140,8 @@ frc::SwerveModulePosition SwerveModule::get_position() {
 
     //correct the drive position
     drive_position_correction += ((relative_steering_position->GetValue() - last_steering_relative_position) * ((config.drive_inverted)? -config.couple_ratio : config.couple_ratio));
+    last_steering_relative_position = relative_steering_position->GetValue();
+    frc::SmartDashboard::PutNumber(id+"/corrected_drive_position", (drive_position->GetValue() - drive_position_correction).value());
 
     return frc::SwerveModulePosition{(drive_position->GetValue() + drive_position_correction) / config.drive_ratio * (wheel_circumference / 1_tr), frc::Rotation2d(steering_position->GetValue())};
 }

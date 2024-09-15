@@ -12,11 +12,13 @@
 SwerveController::SwerveController(GyroInput *input): input_system(input)
 {
     this->input_system = input;
+    module_positions_publisher = nt::StructArrayTopic<frc::SwerveModulePosition>(nt::GetTopic(nt::GetDefaultInstance(), "swerve/module_positions")).Publish();
+    odometry_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "swerve/odometry_pose")).Publish();
     return;
 }
 
 void SwerveController::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::microseconds(1800);
+    this->next_execution = current_time + std::chrono::microseconds(1900);
 }
 
 void SwerveController::call() {
@@ -39,6 +41,9 @@ void SwerveController::call() {
     }
 
     odometry.Update(input_system->get_last_rotation(), last_reported_positions);
+
+    module_positions_publisher.Set(last_reported_positions);
+    odometry_pose_publisher.Set(odometry.GetPose());
 
     std::chrono::duration<double, std::micro> diff = std::chrono::steady_clock::now() - start_time;
 

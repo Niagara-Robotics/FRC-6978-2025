@@ -12,6 +12,7 @@
 #include "SwerveController.h"
 #include "GyroInput.h"
 #include "DriverInput.h"
+#include "AutoPilot.h"
 
 class Robot: frc::RobotBase {
     public:
@@ -21,7 +22,18 @@ class Robot: frc::RobotBase {
     Scheduler *teleScheduler = new Scheduler("teleop");
     GyroInput *input_test = new GyroInput();
     SwerveController *swerve_controller = new SwerveController(input_test);
-    DriverInput driver_input = DriverInput(swerve_controller->planar_velocity_channel.get_handle(), swerve_controller->twist_velocity_channel.get_handle());
+    AutoPilot auto_pilot = AutoPilot(
+        swerve_controller->planar_velocity_channel.get_handle(), 
+        swerve_controller->twist_velocity_channel.get_handle(),
+        &(swerve_controller->odometry)
+    );
+
+    DriverInput driver_input = DriverInput(
+        swerve_controller->planar_velocity_channel.get_handle(), 
+        swerve_controller->twist_velocity_channel.get_handle(),
+        auto_pilot.twist_mode_channel.get_handle(),
+        auto_pilot.heading_channel.get_handle()
+    );
 
     bool should_exit = false;
 };

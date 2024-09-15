@@ -67,7 +67,7 @@ public:
     bool try_take_control() {
         return parent->take_control(id, true);
     };
-    ~ControlHandle();
+    ~ControlHandle() {};
 };
 
 template <class T> ControlChannel<T>::ControlChannel(T init_value) : value(init_value)
@@ -81,7 +81,7 @@ template <class T> bool ControlChannel<T>::take_control(int id, bool permissivie
         return true;
     }
 
-    if(!permissive) return false;
+    if(!this->permissive) return false;
 
     this->controller_id = id;
     this->permissive = permissive;

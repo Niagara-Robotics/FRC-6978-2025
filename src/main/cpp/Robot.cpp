@@ -15,6 +15,7 @@ void Robot::StartCompetition() {
     teleScheduler->register_task(input_test);
     teleScheduler->register_task(swerve_controller);
     teleScheduler->register_task(&driver_input);
+    teleScheduler->register_task(&auto_pilot);
     HAL_ObserveUserProgramStarting();
     HAL_ObserveUserProgramDisabled();
     std::cout << "started\n";

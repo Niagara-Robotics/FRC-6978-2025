@@ -5,6 +5,9 @@
 #include <ctre/phoenix6/CANcoder.hpp>
 #include <list>
 #include <frc/Joystick.h>
+#include <networktables/NetworkTable.h>
+#include <networktables/StructArrayTopic.h>
+#include <networktables/StructTopic.h>
 #include "GyroInput.h"
 #include "ControlChannel.h"
 
@@ -16,6 +19,7 @@ public:
     bool robot_relative = false;
 
     PlanarSwerveRequest(units::velocity::meters_per_second_t x, units::velocity::meters_per_second_t y): x(x), y(y) {}
+    PlanarSwerveRequest(): x(0), y(0) {}
 };
 
 /**SwerveController manages kinematics and output to all swerve modules
@@ -155,6 +159,8 @@ private:
 
     GyroInput *input_system;
 
+    nt::StructArrayPublisher<frc::SwerveModulePosition> module_positions_publisher;
+    nt::StructPublisher<frc::Pose2d> odometry_pose_publisher;
 
 public:
     controlchannel::ControlChannel<PlanarSwerveRequest> planar_velocity_channel = controlchannel::ControlChannel(PlanarSwerveRequest(0_mps, 0_mps));
