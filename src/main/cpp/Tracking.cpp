@@ -18,9 +18,10 @@ Tracking::Tracking(SwerveController *swerve_controller):
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = INADDR_ANY;
     servaddr.sin_port = POSE_STREAMER_PORT;
-
+    frc::SmartDashboard::PutNumber("socket_bind_failure", 0.0);
     if (bind(sockfd, (const struct sockaddr*) &servaddr, sizeof(servaddr)) < 0) {
         printf("Failed to bind socket\n");
+        frc::SmartDashboard::PutNumber("socket_bind_failure", 1.0);
     }
 }
 
@@ -59,7 +60,7 @@ void Tracking::handle_packet(char buf[256]) {
     bool hasCamera;
     bool hasRotation;
     double distanceUsed = -1;
-
+    printf("Got ADC packet\n");
     for(int obj = 0; obj < object_count; obj++) {
         if(buf[3+offset] == 0x10 && buf[3+offset+1] == 0x00) { //camera observed robot position
             if(buf[3+offset+2] == 0x12) { //3d position from camera
@@ -68,15 +69,18 @@ void Tracking::handle_packet(char buf[256]) {
                 memcpy(&z, buf+3+offset+3+(sizeof(double)*2), sizeof(double));
                 offset+=24;
                 hasCamera = true;
+                printf("Got 3D position\n");
             } else if (buf[3+offset+2] == 0x11) { //2d rotation
                 memcpy(&yaw, buf+3+offset+3, sizeof(double));
                 offset+=8;
                 hasRotation = true;
+                printf("Got 2D rotation\n");
             }
         } else if (buf[3+offset] == 0x10 && buf[3+offset+1] == 0x03) {
             if(buf[3+offset+2] == 0x04) {
                 memcpy(&distanceUsed, buf+3+offset+3, sizeof(double));
                 offset+=8;
+                printf("Got double for distance\n");
             }
         }
         offset += 3;
@@ -107,9 +111,11 @@ void Tracking::call(bool robot_enabled, bool autonomous) {
 
     char buf[256];
     if(recv(sockfd, buf, 256, MSG_DONTWAIT) > 0) {
-        
+        printf("Got unc packet\n");
+        handle_packet(buf);
+        frc::SmartDashboard::PutNumber("got_packet", 1.0);
     }
-
+    
     std::chrono::duration<double, std::ratio<1, 1>> gyro_delta = std::chrono::steady_clock::now() - mxp_update_timestamp;
     current_rotation_estimate = recent_gyro_pose + gyro_offset + (gyro_rate * gyro_delta.count()) * 1.0;
 

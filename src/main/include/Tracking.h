@@ -11,7 +11,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#define POSE_STREAMER_PORT 6000
+#define POSE_STREAMER_PORT 8833
 
 class Tracking : public Task
 {
