@@ -29,7 +29,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
     last_steering_relative_position = relative_steering_position->GetValue();
 
     steering_velocity = &steering_encoder->GetVelocity();
-    steering_velocity->SetUpdateFrequency(800_Hz, 2_s);
+    steering_velocity->SetUpdateFrequency(550_Hz, 2_s);
 
     steering_encoder->OptimizeBusUtilization();
 
@@ -42,17 +42,17 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
     drive_motor->SetPosition(0_tr);
 
     drive_position = &drive_motor->GetPosition();
-    drive_position->SetUpdateFrequency(600_Hz, 2_s);
+    drive_position->SetUpdateFrequency(800_Hz, 2_s);
 
-    drive_velocity = &drive_motor->GetVelocity();
-    drive_velocity->SetUpdateFrequency(0_Hz, 2_s);
+    //drive_velocity = &drive_motor->GetVelocity();
+    //drive_velocity->SetUpdateFrequency(0_Hz, 2_s);
 
     drive_control = new controls::VelocityVoltage(0_tps);
-    drive_control->UpdateFreqHz = 0_Hz; //synchronous request
+    drive_control->UpdateFreqHz = 550_Hz; //synchronous request
 
     drive_motor->SetControl(*drive_control);
 
-    drive_motor->OptimizeBusUtilization();
+    drive_motor->OptimizeBusUtilization(0_Hz, 2_s);
 
     //setup steering motor
 
@@ -73,11 +73,11 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
     steer_motor->GetConfigurator().Apply(config.steer_motor_base_config);
 
     steer_control = new controls::MotionMagicVoltage(0_tr);
-    steer_control->UpdateFreqHz = 0_Hz;
+    steer_control->UpdateFreqHz = 550_Hz;
 
     steer_motor->SetControl(*steer_control);
 
-    steer_motor->OptimizeBusUtilization();
+    steer_motor->OptimizeBusUtilization(0_Hz, 2_s);
 
     wheel_circumference = config.wheel_radius * M_PI * 2;
     std::cout << "wheel circumference " << wheel_circumference.value() << std::endl;
@@ -99,15 +99,15 @@ void SwerveModule::apply(frc::SwerveModuleState target_state)
     //set the steering output 
     steer_control->Position = target_state.angle.Radians().convert<units::angle::turn>();
     
-    std::chrono::duration<double, std::micro> steer_calc_time = std::chrono::steady_clock::now() - start_time;
-    start_time = std::chrono::steady_clock::now();
+    //std::chrono::duration<double, std::micro> steer_calc_time = std::chrono::steady_clock::now() - start_time;
+    //start_time = std::chrono::steady_clock::now();
 
     if (steer_motor->SetControl(*steer_control) != 0) {
         this->state = 20;
     }
 
-    std::chrono::duration<double, std::micro> steer_apply_time = std::chrono::steady_clock::now() - start_time;
-    start_time = std::chrono::steady_clock::now();
+    //std::chrono::duration<double, std::micro> steer_apply_time = std::chrono::steady_clock::now() - start_time;
+    //start_time = std::chrono::steady_clock::now();
 
     //cosine compensation for drive velocity
     units::angular_velocity::turns_per_second_t drive_velocity = target_state.speed / (wheel_circumference / 1_tr) * config.drive_ratio;
@@ -117,15 +117,15 @@ void SwerveModule::apply(frc::SwerveModuleState target_state)
 
     drive_control->Velocity = drive_velocity;
 
-    std::chrono::duration<double, std::micro> drive_calc_time = std::chrono::steady_clock::now() - start_time;
-    start_time = std::chrono::steady_clock::now();
+    //std::chrono::duration<double, std::micro> drive_calc_time = std::chrono::steady_clock::now() - start_time;
+    //start_time = std::chrono::steady_clock::now();
     
     if (drive_motor->SetControl(*drive_control) != 0) {
         this->state = 30;
     }
 
-    std::chrono::duration<double, std::micro> drive_apply_time = std::chrono::steady_clock::now() - start_time;
-    start_time = std::chrono::steady_clock::now();
+    //std::chrono::duration<double, std::micro> drive_apply_time = std::chrono::steady_clock::now() - start_time;
+    //start_time = std::chrono::steady_clock::now();
 
     //frc::SmartDashboard::PutNumber(id+"/steer_calc_time", steer_calc_time.count());
     //frc::SmartDashboard::PutNumber(id+"/steer_apply_time", steer_apply_time.count());
@@ -161,6 +161,14 @@ void SwerveModule::test_couple() {
     if (drive_motor->SetControl(*drive_control) != 0) {
         this->state = SMC_STATE_DEGRADED;
     }
+}
+
+void SwerveModule::idle() {
+    if(BaseStatusSignal::RefreshAll(*steering_position, *steering_velocity) != 0) {
+        this->state = 10;
+    }
+    steer_motor->SetControl(ctre::phoenix6::controls::MotionMagicVoltage(*steer_control));
+    drive_motor->SetControl(ctre::phoenix6::controls::VelocityVoltage(*drive_control));
 }
 
 int SwerveModule::get_state() {

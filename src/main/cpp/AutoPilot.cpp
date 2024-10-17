@@ -1,7 +1,7 @@
 #include "AutoPilot.h"
 #include <frc/smartdashboard/SmartDashboard.h>
 
-units::angular_velocity::radians_per_second_t heading_proportional(units::angle::radian_t target, units::angle::radian_t current) {
+units::angular_velocity::radians_per_second_t AutoPilot::heading_proportional(units::angle::radian_t target, units::angle::radian_t current) {
     units::angle::radian_t diff = (current - target);
     if(diff.value() > M_PI) diff-=M_PI*2_rad;
     if(diff.value() < -M_PI) diff+=M_PI*2_rad;
@@ -13,25 +13,25 @@ units::angular_velocity::radians_per_second_t heading_proportional(units::angle:
     return output;
 }
 
-void AutoPilot::call() {
+void AutoPilot::call(bool robot_enabled, bool autonomous) {
     switch (twist_mode_channel.get())
     {
-    case heading: {//heading PID
+    case AutoPilotTwistMode::heading: {//heading PID
         twist_handle.try_take_control();
-        twist_handle.set(heading_proportional(heading_channel.get(), odometry->GetPose().Rotation().Radians()));
+        twist_handle.set(heading_proportional(heading_channel.get(), tracking->get_pose().Rotation().Radians()));
         break;
     }
 
-    case face: {
+    case AutoPilotTwistMode::face: {
         twist_handle.try_take_control();
-        frc::Translation2d diff_translation = target_pose.Translation() - odometry->GetPose().Translation();
+        frc::Translation2d diff_translation = pose_channel.get().Translation() - tracking->get_pose().Translation();
         double target = atan2(diff_translation.Y().value(), diff_translation.X().value());
         frc::SmartDashboard::PutNumber("autopilot/target_heading", target);
-        twist_handle.set(heading_proportional(target * 1.0_rad, odometry->GetPose().Rotation().Radians()));
+        twist_handle.set(heading_proportional(target * 1.0_rad, tracking->get_pose().Rotation().Radians()));
         break;
     }
     
-    case none:
+    case AutoPilotTwistMode::none:
         twist_handle.set(0_rad_per_s);
         break;
     }

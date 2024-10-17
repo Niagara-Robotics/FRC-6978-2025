@@ -3,12 +3,12 @@
 #include <frc/smartdashboard/SmartDashboard.h>
 
 #define DEAD_ZONE 0.15
-#define xyMultiplier 1.5_mps
-#define wMultiplier 3.14_rad_per_s
+#define xyMultiplier 2.0_mps
+#define wMultiplier 4.14_rad_per_s
 
 #define BUTTON_TAKE_CONTROL 2
 
-void DriverInput::call() {
+void DriverInput::call(bool robot_enabled, bool autonomous) {
     double x = -js.GetRawAxis(1); //joystick y is robot x
     double y = -js.GetRawAxis(0);
     double omega = -js.GetRawAxis(2);
@@ -40,23 +40,32 @@ void DriverInput::call() {
             std::cout << "Failed to grab planar handle" << std::endl;
         }
         ap_twist_mode_handle.try_take_control();
-        ap_twist_mode_handle.set(none);
+        ap_twist_mode_handle.set(AutoPilotTwistMode::none);
 
         twist_handle.try_take_control();
 
     }
+    //y = 0;
     planar_handle.set(PlanarSwerveRequest(x*xyMultiplier, y*xyMultiplier));
     twist_handle.set(omega * wMultiplier);
+
+    if(js.GetRawButton(5)){
+        tracking->reset();
+    }
+
+    if(js.GetRawButton(1)) {
+        tracking->set_gyro_angle(0_rad);
+    }
 
     if(js.GetRawButton(3)) {
         ap_twist_mode_handle.try_take_control();
         ap_heading_handle.try_take_control();
-        ap_twist_mode_handle.set(heading);
+        ap_twist_mode_handle.set(AutoPilotTwistMode::heading);
     }
     if(js.GetRawButton(4)) {
         ap_twist_mode_handle.try_take_control();
         ap_heading_handle.try_take_control();
-        ap_twist_mode_handle.set(face);
+        ap_twist_mode_handle.set(AutoPilotTwistMode::face);
     }
 
     int pov = js.GetPOV(0);
@@ -77,6 +86,27 @@ void DriverInput::call() {
         break;
     default:
         break;
+    }
+
+    if(js.GetRawButton(6)){
+        index_mode_handle.try_take_control();
+        index_mode_handle.set(IntakeIndexingMode::roll_in);
+    } else {
+        index_mode_handle.set(IntakeIndexingMode::stop);
+    }
+    
+    if(js.GetRawButton(8)) {
+        launcher_mode_handle.try_take_control();
+        launcher_mode_handle.set(LauncherMode::velocity_interlock);
+    } else {
+        launcher_mode_handle.set(LauncherMode::idle);
+    }
+
+    if(js.GetRawButton(10)) {
+        launcher_tilt_handle.try_take_control();
+        launcher_tilt_handle.set(0.93_rad);
+    } else if (js.GetRawButton(14)) {
+        launcher_tilt_handle.set(0.05_rad);
     }
 
 }

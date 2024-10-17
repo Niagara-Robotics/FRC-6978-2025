@@ -5,6 +5,8 @@
 #include <frc/Joystick.h>
 #include "SwerveController.h"
 #include "AutoPilot.h"
+#include "Tracking.h"
+#include "NoteHandler.h"
 
 class DriverInput : public Task
 {
@@ -14,16 +16,28 @@ private:
     controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle;
     controlchannel::ControlHandle<AutoPilotTwistMode> ap_twist_mode_handle;
     controlchannel::ControlHandle<units::angle::radian_t> ap_heading_handle;
+
+    controlchannel::ControlHandle<IntakeIndexingMode> index_mode_handle;
+    controlchannel::ControlHandle<LauncherMode> launcher_mode_handle;
+
+    controlchannel::ControlHandle<units::angle::radian_t> launcher_tilt_handle;
+
+    Tracking *tracking;
 public:
     DriverInput(
         controlchannel::ControlHandle<PlanarSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
         controlchannel::ControlHandle<AutoPilotTwistMode> ap_twist_mode_handle,
-        controlchannel::ControlHandle<units::angle::radian_t> ap_heading_handle):
+        controlchannel::ControlHandle<units::angle::radian_t> ap_heading_handle,
+        controlchannel::ControlHandle<IntakeIndexingMode> index_mode_handle,
+        controlchannel::ControlHandle<LauncherMode> launcher_mode_handle,
+        controlchannel::ControlHandle<units::angle::radian_t> launcher_tilt_handle,
+        Tracking *tracking):
         planar_handle(planar_handle), twist_handle(twist_handle), 
-        ap_twist_mode_handle(ap_twist_mode_handle), ap_heading_handle(ap_heading_handle) {}
+        ap_twist_mode_handle(ap_twist_mode_handle), ap_heading_handle(ap_heading_handle), tracking(tracking),
+        index_mode_handle(index_mode_handle), launcher_mode_handle(launcher_mode_handle), launcher_tilt_handle(launcher_tilt_handle) {}
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
-    void call() override;
+    void call(bool robot_enabled, bool autonomous) override;
     bool is_paused() override;
 };

@@ -11,6 +11,7 @@ public:
     Scheduler(std::string name);
     void execute();
     void register_task(Task *task);
+    void set_robot_status(bool enabled, bool autonomous);
     ~Scheduler();
 private:
     std::list<Task *> tasks;
@@ -18,5 +19,7 @@ private:
     std::string name;
     void log(const char* message);
     bool stop_flag = false;
+    bool enabled = false;
+    bool autonomous = false;
 };
 

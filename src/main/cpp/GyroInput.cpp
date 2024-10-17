@@ -8,7 +8,7 @@
 
 GyroInput::GyroInput(/* args */)
 {
-    mxp = new AHRS(frc::SPI::Port::kMXP, 1000000, 254);
+
     //mxp->ZeroYaw();
     //mxp->SetAngleAdjustment()
     test_motor = new ctre::phoenix6::hardware::TalonFX(40);
@@ -24,24 +24,43 @@ GyroInput::GyroInput(/* args */)
     bind(sockfd, (struct sockaddr*)&server_address, sizeof(server_address));
 }
 
-void GyroInput::call() {
+void GyroInput::call(bool robot_enabled, bool autonomous) {
     //output.Set(js.GetRawButton(1));
     if(js.GetRawButton(1)) {
-        mxp->ZeroYaw();
+        //mxp->ZeroYaw();
     }
-    frc::SmartDashboard::PutNumber("yaw_rotation", mxp->GetRotation2d().Degrees().value());
-    frc::SmartDashboard::PutNumber("yaw_rate", mxp->GetRate());
+
+    //frc::SmartDashboard::PutNumber("yaw_rotation", mxp->GetRotation2d().Degrees().value());
+    //frc::SmartDashboard::PutNumber("yaw_rate", mxp->GetRate());
     
-    if(!mxp->IsCalibrating())
-        this->last_rotation = mxp->GetRotation2d();
+    //if(mxp->IsCalibrating())
+        return;
+    
+    //if(mxp->GetUpdateCount() == last_update_count)
+        return;
+
+    last_update_timestamp = std::chrono::steady_clock::now();
+    //last_update_count = mxp->GetUpdateCount();
+    //this->last_rotation = mxp->GetRotation2d();
+    new_data = true;
 }
 
 frc::Rotation2d GyroInput::get_last_rotation() {
     return this->last_rotation;
 }
 
+std::chrono::time_point<std::chrono::steady_clock> GyroInput::get_timestamp() {
+    return last_update_timestamp;
+}
+
+bool GyroInput::get_new() {
+    bool ret = new_data;
+    new_data = false;
+    return ret;
+}
+
 void GyroInput::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::microseconds(4000);
+    this->next_execution = current_time + std::chrono::microseconds(2000);
 }
 
 bool GyroInput::is_paused() {

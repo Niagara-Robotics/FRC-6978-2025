@@ -11,32 +11,40 @@
 #include <iostream>
 
 void Robot::StartCompetition() {
-    std::cout << "started";
-    teleScheduler->register_task(input_test);
-    teleScheduler->register_task(swerve_controller);
-    teleScheduler->register_task(&driver_input);
-    teleScheduler->register_task(&auto_pilot);
+    std::cout << "Started Competition" << std::endl;
+    drive_scheduler->register_task(swerve_controller);
+    drive_scheduler->register_task(&driver_input);
+
+    drive_scheduler->register_task(&note_handler);
+
+    tracking_scheduler->register_task(&auto_pilot);
+    tracking_scheduler->register_task(&tracking);
+
     HAL_ObserveUserProgramStarting();
     HAL_ObserveUserProgramDisabled();
-    std::cout << "started\n";
+    std::cout << "Tasks registered\n";
     while (true)
     {
         HAL_RefreshDSData();
         HAL_ControlWord word;
         HAL_GetControlWord(&word);
-        swerve_controller->notify_enabled(word.enabled);
+        bool enabled = word.enabled;
+        if(word.test) enabled = false;
+
+        drive_scheduler->set_robot_status(enabled, word.autonomous);
+        tracking_scheduler->set_robot_status(enabled, word.autonomous);
         
-        
-        usleep(5000);
+        usleep(8000);
         if(should_exit) {
             break;
         }
     }
-    teleScheduler->~Scheduler();
+    drive_scheduler->~Scheduler();
+    tracking_scheduler->~Scheduler();
 }
 
 void Robot::EndCompetition() {
-    std::cout << "ended";
+    std::cout << "ended\n";
     should_exit = true;
 }
 

@@ -18,11 +18,16 @@ void Scheduler::log(const char* message) {
     std::cout << "[scheduler:" << this->name << "] " << message << "\n";
 }
 
+void Scheduler::set_robot_status(bool enabled, bool autonomous) {
+    this->enabled = enabled;
+    this->autonomous = autonomous;
+}
+
 void Scheduler::execute() 
 {
     log("Hello!");
     while(true) {
-        std::chrono::time_point<std::chrono::steady_clock> next_exec_time = std::chrono::steady_clock::now() + std::chrono::microseconds(500);
+        std::chrono::time_point<std::chrono::steady_clock> next_exec_time = std::chrono::steady_clock::now() + std::chrono::microseconds(600);
         for (Task *task : tasks)
         {
             if(stop_flag) {
@@ -32,7 +37,7 @@ void Scheduler::execute()
             if ((std::chrono::steady_clock::now() - std::chrono::microseconds(100)) > task->get_next_execution())
             {
                 task->schedule_next(std::chrono::steady_clock::now());
-                task->call();
+                task->call(enabled, autonomous);
             }
         }
         std::this_thread::sleep_until(next_exec_time);

@@ -36,11 +36,11 @@ private:
 
     ctre::phoenix6::configs::Slot0Configs drive_clc_gains = ctre::phoenix6::configs::Slot0Configs()
         .WithKP(0.018).WithKI(0).WithKD(0)
-        .WithKS(0.015).WithKV(0.12).WithKA(0.004);
+        .WithKS(0.02).WithKV(0.141).WithKA(0.004);
 
     ctre::phoenix6::configs::Slot0Configs steer_clc_gains = ctre::phoenix6::configs::Slot0Configs()
-        .WithKP(82.0).WithKI(0).WithKD(0)
-        .WithKS(0.12).WithKV(0).WithKA(0.00);
+        .WithKP(93.0).WithKI(0).WithKD(0)
+        .WithKS(0.14).WithKV(0.9).WithKA(0.0070);
 
     ctre::phoenix6::configs::CurrentLimitsConfigs drive_current_limits = ctre::phoenix6::configs::CurrentLimitsConfigs()
         .WithStatorCurrentLimitEnable(true)
@@ -48,11 +48,11 @@ private:
 
     ctre::phoenix6::configs::CurrentLimitsConfigs steer_current_limits = ctre::phoenix6::configs::CurrentLimitsConfigs()
         .WithStatorCurrentLimitEnable(true)
-        .WithStatorCurrentLimit(40);
+        .WithStatorCurrentLimit(50);
 
     ctre::phoenix6::configs::VoltageConfigs voltage_limits = ctre::phoenix6::configs::VoltageConfigs()
-        .WithPeakForwardVoltage(8.5)
-        .WithPeakReverseVoltage(-8.5);
+        .WithPeakForwardVoltage(11.8)
+        .WithPeakReverseVoltage(-11.8);
 
     ctre::phoenix6::configs::CANcoderConfiguration steer_encoder_base_config;
     ctre::phoenix6::configs::TalonFXConfiguration drive_motor_base_config = ctre::phoenix6::configs::TalonFXConfiguration()
@@ -75,15 +75,15 @@ private:
         3.0, //couple ratio
         65, //steer acceleration
         5.2, //steer velocity(cruise)
-        2_in //wheel radius, 2 inches
+        1.92_in //wheel radius, 2 inches
     );
 
     wpi::array<frc::Translation2d, 4> module_positions = 
     {
-        frc::Translation2d(0.31_m, 0.31_m),
-        frc::Translation2d(0.31_m, -0.31_m),
-        frc::Translation2d(-0.31_m, 0.31_m),
-        frc::Translation2d(-0.31_m, -0.31_m)
+        frc::Translation2d(0.304_m, 0.304_m),
+        frc::Translation2d(0.304_m, -0.304_m),
+        frc::Translation2d(-0.304_m, 0.304_m),
+        frc::Translation2d(-0.304_m, -0.304_m)
     };
 
     //SMC1
@@ -157,23 +157,26 @@ private:
 
     std::mutex target_mutex;
 
-    GyroInput *input_system;
+    frc::Rotation2d current_rotation;
 
     nt::StructArrayPublisher<frc::SwerveModulePosition> module_positions_publisher;
-    nt::StructPublisher<frc::Pose2d> odometry_pose_publisher;
+
+    //ctre::phoenix6::hardware::TalonFX fake_talon = ctre::phoenix6::hardware::TalonFX(26);
 
 public:
     controlchannel::ControlChannel<PlanarSwerveRequest> planar_velocity_channel = controlchannel::ControlChannel(PlanarSwerveRequest(0_mps, 0_mps));
     controlchannel::ControlChannel<units::angular_velocity::radians_per_second_t> twist_velocity_channel = controlchannel::ControlChannel(0_rad_per_s);
-    
-    frc::SwerveDriveOdometry<4> odometry = frc::SwerveDriveOdometry<4>(kinematics, frc::Rotation2d(), last_reported_positions);
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
-    void call() override;
+    void call(bool robot_enabled, bool autonomous) override;
     bool is_paused() override;
 
-    void notify_enabled(bool enabled);
+    void set_chassis_rotation(frc::Rotation2d rotation);
 
-    SwerveController(GyroInput *input);
+    wpi::array<frc::SwerveModulePosition, 4> fetch_module_positions();
+
+    frc::SwerveDriveKinematics<4> get_kinematics();
+
+    SwerveController();
     ~SwerveController();
 };

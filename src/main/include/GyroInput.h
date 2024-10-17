@@ -9,6 +9,7 @@
 #include "AHRS.h"
 #include <ctre/phoenix6/TalonFX.hpp>
 #include <ctre/phoenix6/configs/Configs.hpp>
+#include <chrono>
 
 class GyroInput : public Task
 {
@@ -18,13 +19,22 @@ private:
     frc::DigitalInput test_input = frc::DigitalInput(0);
     int sockfd;
     sockaddr_in server_address;
-    AHRS *mxp;
+    
     frc::Rotation2d last_rotation;
+
+    double last_update_count;
+
+    std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp;
+
+    bool new_data;
 public:
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
-    void call() override;
+    void call(bool robot_enabled, bool autonomous) override;
     bool is_paused() override;
+
     frc::Rotation2d get_last_rotation();
+    std::chrono::time_point<std::chrono::steady_clock> get_timestamp();
+    bool get_new();
 
     GyroInput(/* args */);
     ~GyroInput();

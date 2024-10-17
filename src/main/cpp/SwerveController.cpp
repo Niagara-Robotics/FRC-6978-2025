@@ -9,19 +9,21 @@
 #include <sched.h>
 #include "ControlChannel.h"
 
-SwerveController::SwerveController(GyroInput *input): input_system(input)
+SwerveController::SwerveController()
 {
-    this->input_system = input;
     module_positions_publisher = nt::StructArrayTopic<frc::SwerveModulePosition>(nt::GetTopic(nt::GetDefaultInstance(), "swerve/module_positions")).Publish();
-    odometry_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "swerve/odometry_pose")).Publish();
     return;
 }
 
 void SwerveController::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::microseconds(1900);
+    this->next_execution = current_time + std::chrono::microseconds(1880);
 }
 
-void SwerveController::call() {
+frc::SwerveDriveKinematics<4> SwerveController::get_kinematics() {
+    return kinematics;
+}
+
+void SwerveController::call(bool robot_enabled, bool autonomous) {
     std::chrono::time_point<std::chrono::steady_clock> start_time = std::chrono::steady_clock::now();
 
     PlanarSwerveRequest planar_request = planar_velocity_channel.get();
@@ -30,33 +32,47 @@ void SwerveController::call() {
     target_chassis_speeds.vy = planar_request.y;
     target_chassis_speeds.omega = twist_velocity_channel.get();
     
-    wpi::array<frc::SwerveModuleState, 4> states = kinematics.ToSwerveModuleStates(frc::ChassisSpeeds::FromFieldRelativeSpeeds(target_chassis_speeds, input_system->get_last_rotation()), frc::Translation2d(0.0_m,0.0_m));
+    wpi::array<frc::SwerveModuleState, 4> states = kinematics.ToSwerveModuleStates(frc::ChassisSpeeds::FromFieldRelativeSpeeds(target_chassis_speeds, current_rotation), frc::Translation2d(0.0_m,0.0_m));
 
     double max_apply_time = 0;
     std::list<std::future<void>> futures = std::list<std::future<void>>();
+
+    frc::SwerveModuleState test_state = frc::SwerveModuleState();
+    
+
     for (size_t i = 0; i < 4; i++)
     {
-        modules[i]->apply(states[i]);
-        last_reported_positions[i] = modules[i]->get_position();
+        if(robot_enabled) {
+            modules[i]->apply(states[i]);
+        }
+        else  {
+            modules[i]->idle();
+        }
     }
 
-    odometry.Update(input_system->get_last_rotation(), last_reported_positions);
-
     module_positions_publisher.Set(last_reported_positions);
-    odometry_pose_publisher.Set(odometry.GetPose());
 
     std::chrono::duration<double, std::micro> diff = std::chrono::steady_clock::now() - start_time;
 
-    frc::SmartDashboard::PutNumber("swerve_controller_total_time_us", diff.count());
+    frc::SmartDashboard::PutNumber("swerve_controller_total_time_percent", (diff.count() / 1880.0) * 100.0);
 
     for (int i = 0; i < 4; i++)
     {
         frc::SmartDashboard::PutNumber("smc" + std::to_string(i) + "_status", modules[i]->get_state());
     }
+
+    //fake_talon.SetControl(ctre::phoenix6::controls::VoltageOut(1.1_V));
 }
 
-void SwerveController::notify_enabled(bool enabled) {
-    this->enabled = enabled;
+void SwerveController::set_chassis_rotation(frc::Rotation2d rotation) {
+    current_rotation = rotation;
+}
+
+wpi::array<frc::SwerveModulePosition, 4> SwerveController::fetch_module_positions() {
+    for (size_t i = 0; i < 4; i++) {
+        last_reported_positions[i] = modules[i]->get_position();
+    }
+    return last_reported_positions;
 }
 
 bool SwerveController::is_paused() {

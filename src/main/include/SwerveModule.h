@@ -118,6 +118,7 @@ private:
 public:
     SwerveModule(SwerveModuleConfig config, std::string id);
     void apply(frc::SwerveModuleState state);
+    void idle();
     void test_couple();
     frc::SwerveModulePosition get_position();
     int get_state();
