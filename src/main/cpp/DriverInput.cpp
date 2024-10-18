@@ -1,14 +1,17 @@
 #include "DriverInput.h"
 #include <iostream>
 #include <frc/smartdashboard/SmartDashboard.h>
+#include <frc/DriverStation.h>
 
 #define DEAD_ZONE 0.15
-#define xyMultiplier 2.0_mps
-#define wMultiplier 4.14_rad_per_s
+#define xyMultiplier 3.0_mps
+#define wMultiplier 4.5_rad_per_s
 
 #define BUTTON_TAKE_CONTROL 2
 
 void DriverInput::call(bool robot_enabled, bool autonomous) {
+    if(autonomous) return;
+    
     double x = -js.GetRawAxis(1); //joystick y is robot x
     double y = -js.GetRawAxis(0);
     double omega = -js.GetRawAxis(2);
@@ -34,6 +37,12 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         ) 
         : 0;
 
+    auto alliance = frc::DriverStation::GetAlliance();
+    if (alliance && alliance.value() == frc::DriverStation::Alliance::kRed) {
+        x = -x;
+        y = -y;
+    }
+    
     if(js.GetRawButton(BUTTON_TAKE_CONTROL)) {
         //std::cout << "grabbing handles" << std::endl;
         if(!planar_handle.try_take_control()) {
@@ -102,7 +111,7 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         launcher_mode_handle.set(LauncherMode::idle);
     }
 
-    if(js.GetRawButton(10)) {
+    if(js.GetRawButton(7)) {
         launcher_tilt_handle.try_take_control();
         launcher_tilt_handle.set(0.93_rad);
     } else if (js.GetRawButton(14)) {
