@@ -55,26 +55,26 @@ private:
     const units::angular_velocity::turns_per_second_t launcher_velocity_tolerance = 0.8_tps;
 
     //hardware
-    TalonFX upper_left_launcher_motor = TalonFX(20);
-    TalonFX upper_right_launcher_motor = TalonFX(22);
+    TalonFX upper_left_launcher_motor = TalonFX(20, "rio");
+    TalonFX upper_right_launcher_motor = TalonFX(22, "rio");
 
-    TalonFX lower_left_launcher_motor = TalonFX(21);
-    TalonFX lower_right_launcher_motor = TalonFX(23);
+    TalonFX lower_left_launcher_motor = TalonFX(21, "rio");
+    TalonFX lower_right_launcher_motor = TalonFX(23, "rio");
 
     ctre::phoenix6::StatusSignal<units::angular_velocity::turns_per_second_t> *upper_left_launcher_velocity;
     ctre::phoenix6::StatusSignal<units::angular_velocity::turns_per_second_t> *upper_right_launcher_velocity;
     ctre::phoenix6::StatusSignal<units::angular_velocity::turns_per_second_t> *lower_left_launcher_velocity;
     ctre::phoenix6::StatusSignal<units::angular_velocity::turns_per_second_t> *lower_right_launcher_velocity;
 
-    TalonFX tilt_motor = TalonFX(30);
+    TalonFX tilt_motor = TalonFX(30, "rio");
     ctre::phoenix6::configs::TalonFXConfiguration tilt_configuration = ctre::phoenix6::configs::TalonFXConfiguration();
     
     ctre::phoenix6::StatusSignal<units::angle::turn_t> *tilt_position_signal;
     ctre::phoenix6::StatusSignal<units::angular_velocity::turns_per_second_t> *tilt_velocity_signal;
 
-    TalonFX index_motor = TalonFX(40);
+    TalonFX index_motor = TalonFX(40, "rio");
 
-    TalonFX intake_motor = TalonFX(10);
+    TalonFX intake_motor = TalonFX(10, "rio");
 
     ctre::phoenix6::controls::VelocityVoltage launcher_request = ctre::phoenix6::controls::VelocityVoltage(0.0_tps);
     ctre::phoenix6::controls::MotionMagicVoltage tilt_request = ctre::phoenix6::controls::MotionMagicVoltage(0.0_rad);
