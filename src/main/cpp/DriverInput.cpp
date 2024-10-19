@@ -113,9 +113,16 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
 
     if(js.GetRawButton(7)) {
         launcher_tilt_handle.try_take_control();
-        launcher_tilt_handle.set(0.93_rad);
+        launcher_tilt_handle.set(frc::SmartDashboard::GetNumber("launcher_test_angle", 0.7)*1_rad);
     } else if (js.GetRawButton(14)) {
         launcher_tilt_handle.set(0.05_rad);
+    }
+
+    if(js.GetRawButton(9)) {
+        auto_shot_mode_handle.try_take_control();
+        auto_shot_mode_handle.set(AutoShotMode::shoot);
+    } else {
+        auto_shot_mode_handle.set(AutoShotMode::none);
     }
 
 }

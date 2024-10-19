@@ -81,7 +81,7 @@ template <class T> bool ControlChannel<T>::take_control(int id, bool permissivie
         return true;
     }
 
-    if(!this->permissive) return false;
+    if(!this->permissive && id != 0) return false;
 
     this->controller_id = id;
     this->permissive = permissive;

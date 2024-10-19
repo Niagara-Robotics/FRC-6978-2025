@@ -19,6 +19,7 @@ void Robot::StartCompetition() {
 
     tracking_scheduler->register_task(&auto_pilot);
     tracking_scheduler->register_task(&tracking);
+    tracking_scheduler->register_task(&auto_shot);
 
     HAL_ObserveUserProgramStarting();
     HAL_ObserveUserProgramDisabled();
@@ -33,7 +34,12 @@ void Robot::StartCompetition() {
 
         drive_scheduler->set_robot_status(enabled, word.autonomous);
         tracking_scheduler->set_robot_status(enabled, word.autonomous);
+
+        if(enabled && !word.autonomous) {HAL_ObserveUserProgramTeleop();}
+        else if(enabled && word.autonomous) {HAL_ObserveUserProgramAutonomous();}
+        else {HAL_ObserveUserProgramDisabled();}
         
+        frc::SmartDashboard::UpdateValues();
         usleep(8000);
         if(should_exit) {
             break;

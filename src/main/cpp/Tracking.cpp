@@ -1,7 +1,7 @@
 #include "Tracking.h"
 
 #include <frc/smartdashboard/SmartDashboard.h>
-
+#include <iostream>
 
 Tracking::Tracking(SwerveController *swerve_controller): 
     swerve_controller(swerve_controller)
@@ -17,12 +17,13 @@ Tracking::Tracking(SwerveController *swerve_controller):
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = INADDR_ANY;
-    servaddr.sin_port = POSE_STREAMER_PORT;
+    servaddr.sin_port = htons(POSE_STREAMER_PORT);
     frc::SmartDashboard::PutNumber("socket_bind_failure", 0.0);
     if (bind(sockfd, (const struct sockaddr*) &servaddr, sizeof(servaddr)) < 0) {
         printf("Failed to bind socket\n");
         frc::SmartDashboard::PutNumber("socket_bind_failure", 1.0);
     }
+    last_speaker_report = SpeakerReport(std::chrono::steady_clock::now(), 0.0_m, 0_rad);
 }
 
 void Tracking::update_gyro() {
@@ -60,7 +61,9 @@ void Tracking::handle_packet(char buf[256]) {
     bool hasCamera;
     bool hasRotation;
     double distanceUsed = -1;
-    printf("Got ADC packet\n");
+    int32_t tag_id = -1;
+    double tag_heading;
+    //printf("Got ADC packet\n");
     for(int obj = 0; obj < object_count; obj++) {
         if(buf[3+offset] == 0x10 && buf[3+offset+1] == 0x00) { //camera observed robot position
             if(buf[3+offset+2] == 0x12) { //3d position from camera
@@ -69,39 +72,72 @@ void Tracking::handle_packet(char buf[256]) {
                 memcpy(&z, buf+3+offset+3+(sizeof(double)*2), sizeof(double));
                 offset+=24;
                 hasCamera = true;
-                printf("Got 3D position\n");
             } else if (buf[3+offset+2] == 0x11) { //2d rotation
                 memcpy(&yaw, buf+3+offset+3, sizeof(double));
                 offset+=8;
                 hasRotation = true;
-                printf("Got 2D rotation\n");
             }
         } else if (buf[3+offset] == 0x10 && buf[3+offset+1] == 0x03) {
             if(buf[3+offset+2] == 0x04) {
                 memcpy(&distanceUsed, buf+3+offset+3, sizeof(double));
                 offset+=8;
-                printf("Got double for distance\n");
+            }
+        } else if (buf[3+offset] == 0x10 && buf[3+offset+1] == 0x04) { //tag ID
+            if(buf[3+offset+2] == 0x03) { //integer
+                memcpy(&tag_id, buf+3+offset+3, sizeof(int32_t));
+                offset+=4;
+            }
+        } else if (buf[3+offset] == 0x10 && buf[3+offset+1] == 0x05) { //camera observed tag heading
+            if(buf[3+offset+2] == 0x04) {
+                memcpy(&tag_heading, buf+3+offset+3, sizeof(double));
+                offset+=8;
             }
         }
         offset += 3;
     }
 
-    if(hasCamera && hasRotation) {
-        //check distance threshold
-        if(distanceUsed > 2.5) return;
-        //check z threshold
-        if(z > 1.5) return;
-        //discriminate based on discrepancies in yaw angle
-        if(!gyro_degraded && fabs(yaw - current_rotation_estimate.Radians().value()) > 0.01) return;
+    auto alliance = frc::DriverStation::GetAlliance();
+    distanceUsed /= 1000.0;    
 
-        //FIXME: update position
-        swerve_odometry->ResetPosition(frc::Rotation2d(current_rotation_estimate), swerve_controller->fetch_module_positions(), frc::Pose2d(frc::Translation2d(x * 1.0_mm, y * 1.0_mm), frc::Rotation2d(current_rotation_estimate)));
-        //check and update orientation
-        if(distanceUsed < 1.5) {
-            //update orientation
-            set_gyro_angle(yaw * 1.0_rad);
+    if(alliance) {
+        if(alliance == frc::DriverStation::Alliance::kRed) { //id 4
+            if(tag_id == 4) {
+                frc::SmartDashboard::PutNumber("speaker_heading", tag_heading);
+                frc::SmartDashboard::PutNumber("speaker_distance", distanceUsed);
+                last_speaker_report = SpeakerReport(std::chrono::steady_clock::now(), distanceUsed* 1.0_m, tag_heading*1.0_rad);
+            }
+        } else { //blue
+            if(tag_id == 7) {
+                frc::SmartDashboard::PutNumber("speaker_heading", tag_heading);
+                frc::SmartDashboard::PutNumber("speaker_distance", distanceUsed);
+                last_speaker_report = SpeakerReport(std::chrono::steady_clock::now(), distanceUsed* 1.0_m, tag_heading*1.0_rad);
+            }
         }
     }
+
+    
+    if(hasCamera && hasRotation) {
+        //check distance threshold
+        if(distanceUsed > 2.8) return;
+        //check z threshold
+        //if(z > 1.5) return;
+        //discriminate based on discrepancies in yaw angle
+        if(distanceUsed < 1.9) {
+            //update orientation
+            set_gyro_angle(yaw * 1.0_rad);
+            gyro_degraded = false;
+        }
+        if(!gyro_degraded && fabs(yaw - current_rotation_estimate.Radians().value()) > 0.07) return;
+
+        swerve_odometry->ResetPosition(frc::Rotation2d(current_rotation_estimate), swerve_controller->fetch_module_positions(), frc::Pose2d(frc::Translation2d(x * 1.0_mm, y * 1.0_mm), frc::Rotation2d(current_rotation_estimate)));
+        //check and update orientation
+        
+        
+    }
+}
+
+SpeakerReport Tracking::get_speaker_pose() {
+    return last_speaker_report;
 }
 
 void Tracking::call(bool robot_enabled, bool autonomous) {
@@ -111,9 +147,7 @@ void Tracking::call(bool robot_enabled, bool autonomous) {
 
     char buf[256];
     if(recv(sockfd, buf, 256, MSG_DONTWAIT) > 0) {
-        printf("Got unc packet\n");
         handle_packet(buf);
-        frc::SmartDashboard::PutNumber("got_packet", 1.0);
     }
     
     std::chrono::duration<double, std::ratio<1, 1>> gyro_delta = std::chrono::steady_clock::now() - mxp_update_timestamp;
@@ -128,8 +162,17 @@ frc::Pose2d Tracking::get_pose() {
     return swerve_odometry->GetPose();
 }
 
+frc::ChassisSpeeds Tracking::get_chassis_speeds() {
+    return swerve_controller->get_chassis_speeds();
+}
+
 void Tracking::reset() {
     swerve_odometry->ResetPosition(frc::Rotation2d(), swerve_controller->fetch_module_positions(), frc::Pose2d());
+}
+
+void Tracking::reset_pose(frc::Pose2d pose) {
+    set_gyro_angle(pose.Rotation());
+    swerve_odometry->ResetPosition(frc::Rotation2d(), swerve_controller->fetch_module_positions(), pose);
 }
 
 void Tracking::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {

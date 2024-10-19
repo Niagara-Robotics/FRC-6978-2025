@@ -15,6 +15,7 @@
 #include "AutoPilot.h"
 #include "Tracking.h"
 #include "NoteHandler.h"
+#include "AutoShot.h"
 
 class Robot: frc::RobotBase {
     public:
@@ -31,10 +32,23 @@ class Robot: frc::RobotBase {
 
     NoteHandler note_handler = NoteHandler();
 
+    AutoShot auto_shot = AutoShot(
+        note_handler.launcher_mode_channel.get_handle(),
+        note_handler.tilt_channel.get_handle(),
+        note_handler.launcher_velocity_channel.get_handle(),
+        &tracking,
+        &note_handler
+    );
+
     AutoPilot auto_pilot = AutoPilot(
         swerve_controller->planar_velocity_channel.get_handle(), 
         swerve_controller->twist_velocity_channel.get_handle(),
-        &tracking
+        note_handler.indexing_mode_channel.get_handle(),
+        note_handler.launcher_mode_channel.get_handle(),
+        note_handler.tilt_channel.get_handle(),
+        auto_shot.mode_channel.get_handle(),
+        &tracking,
+        &note_handler
     );
 
     DriverInput driver_input = DriverInput(
@@ -45,6 +59,7 @@ class Robot: frc::RobotBase {
         note_handler.indexing_mode_channel.get_handle(),
         note_handler.launcher_mode_channel.get_handle(),
         note_handler.tilt_channel.get_handle(),
+        auto_shot.mode_channel.get_handle(),
         &tracking
     );
 

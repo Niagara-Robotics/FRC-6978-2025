@@ -10,8 +10,22 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <frc/DriverStation.h>
 
-#define POSE_STREAMER_PORT 8833
+#define POSE_STREAMER_PORT 6000
+
+class SpeakerReport {
+public:
+    std::chrono::time_point<std::chrono::steady_clock> observation_time;
+    units::length::meter_t distance;
+    units::angle::radian_t heading;
+
+    SpeakerReport() {};
+
+    SpeakerReport(std::chrono::time_point<std::chrono::steady_clock> observation_time,
+    units::length::meter_t distance,
+    units::angle::radian_t heading): observation_time(observation_time), distance(distance), heading(heading) {};
+};
 
 class Tracking : public Task
 {
@@ -25,7 +39,7 @@ private:
     frc::Rotation2d current_rotation_estimate;
     AHRS *mxp;
 
-    bool gyro_degraded = false;
+    bool gyro_degraded = true;
 
     void update_gyro();
 
@@ -38,7 +52,11 @@ private:
 
     nt::StructPublisher<frc::Pose2d> odometry_pose_publisher;
 
+    SpeakerReport last_speaker_report;
+
     void handle_packet(char buf[256]);
+
+    void drive_robot_relative(frc::ChassisSpeeds speeds);
 public:
     Tracking(SwerveController *swerve_controller);
 
@@ -48,8 +66,13 @@ public:
 
     void set_gyro_angle(frc::Rotation2d target_rotation);
 
+    frc::ChassisSpeeds get_chassis_speeds();
+
     frc::Pose2d get_pose();
     void reset();
+    void reset_pose(frc::Pose2d pose);
+
+    SpeakerReport get_speaker_pose();
 
     ~Tracking();
 };

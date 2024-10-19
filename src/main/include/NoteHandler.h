@@ -49,8 +49,8 @@ private:
     const units::angle::radian_t tilt_max_position = 0.75_rad;
     const units::angle::radian_t tilt_park_position = 0.113446_rad;
 
-    const units::angle::radian_t tilt_position_tolerance = 0.009_rad;
-    const units::angular_velocity::radians_per_second_t tilt_velocity_tolerance = 0.005_rad_per_s;
+    const units::angle::radian_t tilt_position_tolerance = 0.03_rad;
+    const units::angular_velocity::radians_per_second_t tilt_velocity_tolerance = 0.008_rad_per_s;
 
     const units::angular_velocity::turns_per_second_t launcher_velocity_tolerance = 0.8_tps;
 
@@ -79,7 +79,7 @@ private:
     ctre::phoenix6::controls::VelocityVoltage launcher_request = ctre::phoenix6::controls::VelocityVoltage(0.0_tps);
     ctre::phoenix6::controls::MotionMagicVoltage tilt_request = ctre::phoenix6::controls::MotionMagicVoltage(0.0_rad);
 
-    ctre::phoenix6::controls::VoltageOut intake_request = ctre::phoenix6::controls::VoltageOut(3.5_V);
+    ctre::phoenix6::controls::VoltageOut intake_request = ctre::phoenix6::controls::VoltageOut(4.2_V);
 
     //sensor
     frc::DigitalInput index_sensor = frc::DigitalInput(0);
@@ -95,6 +95,9 @@ private:
     IntakeIndexingState indexing_state = IntakeIndexingState::empty;
     IntakeIndexingMode indexing_mode = IntakeIndexingMode::stop;
 
+    std::chrono::time_point<std::chrono::steady_clock> fire_start;
+    bool fire_timer_elapsed = false;
+
     //helpers
     void set_launcher_motors();
     void idle_launcher_motors();
@@ -107,14 +110,18 @@ public:
 
     controlchannel::ControlChannel<units::angle::radian_t> tilt_channel = controlchannel::ControlChannel(0.0_rad);
     controlchannel::ControlChannel<LauncherMode> launcher_mode_channel = controlchannel::ControlChannel(LauncherMode::idle);
-    controlchannel::ControlChannel<units::angular_velocity::turns_per_second_t> launcher_velocity_channel = controlchannel::ControlChannel(25.0_tps);
+    controlchannel::ControlChannel<units::angular_velocity::turns_per_second_t> launcher_velocity_channel = controlchannel::ControlChannel(75.0_tps);
     controlchannel::ControlChannel<IntakeIndexingMode> indexing_mode_channel = controlchannel::ControlChannel(IntakeIndexingMode::stop);
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
     void call(bool robot_enabled, bool autonomous) override;
     bool is_paused() override;
 
+    IntakeIndexingState get_index_state();
+
     bool get_tilt_interlock();
+    LauncherState get_launcher_state();
+    bool get_fire_timer_elapsed();
 
     ~NoteHandler();
 };

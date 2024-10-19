@@ -32,7 +32,7 @@ void SwerveController::call(bool robot_enabled, bool autonomous) {
     target_chassis_speeds.vy = planar_request.y;
     target_chassis_speeds.omega = twist_velocity_channel.get();
     
-    wpi::array<frc::SwerveModuleState, 4> states = kinematics.ToSwerveModuleStates(frc::ChassisSpeeds::FromFieldRelativeSpeeds(target_chassis_speeds, current_rotation), frc::Translation2d(0.0_m,0.0_m));
+    wpi::array<frc::SwerveModuleState, 4> states = (planar_request.robot_relative)? kinematics.ToSwerveModuleStates(target_chassis_speeds, frc::Translation2d(0.0_m,0.0_m)) : kinematics.ToSwerveModuleStates(frc::ChassisSpeeds::FromFieldRelativeSpeeds(target_chassis_speeds, current_rotation), frc::Translation2d(0.0_m,0.0_m));
 
     double max_apply_time = 0;
     std::list<std::future<void>> futures = std::list<std::future<void>>();
@@ -73,6 +73,19 @@ wpi::array<frc::SwerveModulePosition, 4> SwerveController::fetch_module_position
         last_reported_positions[i] = modules[i]->get_position();
     }
     return last_reported_positions;
+}
+
+frc::ChassisSpeeds SwerveController::get_chassis_speeds() {
+    wpi::array<frc::SwerveModuleState, 4> states= {
+        frc::SwerveModuleState{0_mps, frc::Rotation2d()},
+        frc::SwerveModuleState{0_mps, frc::Rotation2d()},
+        frc::SwerveModuleState{0_mps, frc::Rotation2d()},
+        frc::SwerveModuleState{0_mps, frc::Rotation2d()}
+    };
+    for (size_t i = 0; i < 4; i++) {
+        states[i] = modules[i]->get_module_state();
+    }
+    return kinematics.ToChassisSpeeds(states);
 }
 
 bool SwerveController::is_paused() {

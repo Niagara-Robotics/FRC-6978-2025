@@ -121,6 +121,7 @@ public:
     void idle();
     void test_couple();
     frc::SwerveModulePosition get_position();
+    frc::SwerveModuleState get_module_state();
     int get_state();
     ~SwerveModule();
 };

@@ -40,14 +40,14 @@ NoteHandler::NoteHandler() {
     
     tilt_configuration.Voltage.PeakForwardVoltage = 2.5;
     tilt_configuration.Voltage.PeakReverseVoltage = -0.6;
-    tilt_configuration.Slot0.kP = 85;
+    tilt_configuration.Slot0.kP = 95;
     tilt_configuration.Slot0.kD = 0.5;
     tilt_configuration.Slot0.kG = 0.313;
     tilt_configuration.Slot0.kA = 0.60;
     tilt_configuration.Slot0.kV = 2.7;
     tilt_configuration.Slot0.GravityType = ctre::phoenix6::signals::GravityTypeValue::Arm_Cosine;
-    tilt_configuration.MotionMagic.MotionMagicAcceleration = 1.1;
-    tilt_configuration.MotionMagic.MotionMagicCruiseVelocity = 0.25;
+    tilt_configuration.MotionMagic.MotionMagicAcceleration = 1.3;
+    tilt_configuration.MotionMagic.MotionMagicCruiseVelocity = 0.5;
     tilt_configuration.Feedback.SensorToMechanismRatio = 50.0;
     tilt_configuration.SoftwareLimitSwitch.ForwardSoftLimitThreshold = tilt_max_position.value() / (2 * M_PI);
     tilt_configuration.SoftwareLimitSwitch.ReverseSoftLimitThreshold = tilt_park_position.value() / (2 * M_PI);
@@ -117,6 +117,7 @@ void NoteHandler::update_tilt_interlock() {
     tilt_interlock = fabs((tilt_channel.get() - tilt_position_signal->GetValue()).value()) < tilt_position_tolerance.value() &&
         fabs(tilt_velocity_signal->GetValue().value()) < tilt_velocity_tolerance.value();
     //TODO: add other safety stuff
+    frc::SmartDashboard::PutBoolean("tilt_interlock", tilt_interlock);
 }
 
 void NoteHandler::update_launcher_velocity_interlock() {
@@ -135,6 +136,14 @@ void NoteHandler::update_launcher_velocity_interlock() {
 
 units::volt_t NoteHandler::calculate_appropriate_indexer_voltage() {
     return 0.35_V+(0.12_V*launcher_velocity_channel.get().value());
+}
+
+bool NoteHandler::get_fire_timer_elapsed(){
+    return fire_timer_elapsed;
+}
+
+IntakeIndexingState NoteHandler::get_index_state() {
+    return indexing_state;
 }
 
 void NoteHandler::call(bool robot_enabled, bool autonomous) {
@@ -179,6 +188,7 @@ void NoteHandler::call(bool robot_enabled, bool autonomous) {
         
         if(launcher_mode_channel.get() != LauncherMode::idle && indexing_state == IntakeIndexingState::hold) launcher_state = LauncherState::waiting;
         if(launcher_mode_channel.get() == LauncherMode::emergency) launcher_state = LauncherState::firing;
+        fire_timer_elapsed = false;
         break;
 
     case LauncherState::waiting:
@@ -189,12 +199,21 @@ void NoteHandler::call(bool robot_enabled, bool autonomous) {
         {
         case LauncherMode::velocity_interlock:
             if(launcher_velocity_interlock) launcher_state = LauncherState::firing;
+            fire_start = std::chrono::steady_clock::now();
             break;
         
         case LauncherMode::tilt_interlock:
             if(launcher_velocity_interlock && tilt_interlock) launcher_state = LauncherState::firing;
+            fire_start = std::chrono::steady_clock::now();
             break;
         }
+
+        if(launcher_mode_channel.get() == LauncherMode::idle) {
+            idle_launcher_motors();
+            indexing_state = IntakeIndexingState::empty;
+            launcher_state = LauncherState::idle;
+        }
+        fire_timer_elapsed = false;
         break;
     case LauncherState::firing:
         indexing_state = IntakeIndexingState::rolling_out;
@@ -204,6 +223,7 @@ void NoteHandler::call(bool robot_enabled, bool autonomous) {
             indexing_state = IntakeIndexingState::empty;
             launcher_state = LauncherState::idle;
         }
+        fire_timer_elapsed = std::chrono::steady_clock::now() > (fire_start+std::chrono::seconds(1));
         break;
     }
 
@@ -230,7 +250,9 @@ void NoteHandler::call(bool robot_enabled, bool autonomous) {
             index_motor.SetControl(ctre::phoenix6::controls::StaticBrake());
             break;
     }
+    
     frc::SmartDashboard::PutNumber("indexing_state", (int)indexing_state);
+    frc::SmartDashboard::PutNumber("indexing_mode", (int)indexing_mode_channel.get());
 }
 
 void NoteHandler::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {

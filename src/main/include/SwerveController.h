@@ -19,6 +19,7 @@ public:
     bool robot_relative = false;
 
     PlanarSwerveRequest(units::velocity::meters_per_second_t x, units::velocity::meters_per_second_t y): x(x), y(y) {}
+    PlanarSwerveRequest(units::velocity::meters_per_second_t x, units::velocity::meters_per_second_t y, bool robot): x(x), y(y), robot_relative(robot) {}
     PlanarSwerveRequest(): x(0), y(0) {}
 };
 
@@ -174,6 +175,7 @@ public:
     void set_chassis_rotation(frc::Rotation2d rotation);
 
     wpi::array<frc::SwerveModulePosition, 4> fetch_module_positions();
+    frc::ChassisSpeeds get_chassis_speeds();
 
     frc::SwerveDriveKinematics<4> get_kinematics();
 
