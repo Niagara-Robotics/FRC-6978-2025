@@ -38,7 +38,9 @@ void Robot::StartCompetition() {
         if(enabled && !word.autonomous) {HAL_ObserveUserProgramTeleop();}
         else if(enabled && word.autonomous) {HAL_ObserveUserProgramAutonomous();}
         else {HAL_ObserveUserProgramDisabled();}
-        
+
+        global_fm.refresh();
+
         frc::SmartDashboard::UpdateValues();
         usleep(8000);
         if(should_exit) {

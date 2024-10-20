@@ -7,6 +7,8 @@
 #include "ControlChannel.h"
 #include <frc/DigitalInput.h>
 
+#include "FaultManager.h"
+
 using namespace ctre::phoenix6::hardware;
 
 enum class TiltCalibrationState {
@@ -105,8 +107,10 @@ private:
     void update_launcher_velocity_interlock();
     void enable_tilt_softlimit();
     units::volt_t calculate_appropriate_indexer_voltage();
+
+    FaultManager fault_manager = FaultManager("note_handler");
 public:
-    NoteHandler(/* args */);
+    NoteHandler(GlobalFaultManager *global_fault_manager);
 
     controlchannel::ControlChannel<units::angle::radian_t> tilt_channel = controlchannel::ControlChannel(0.0_rad);
     controlchannel::ControlChannel<LauncherMode> launcher_mode_channel = controlchannel::ControlChannel(LauncherMode::idle);

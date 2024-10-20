@@ -3,7 +3,8 @@
 #include <cstdio>
 #include <iostream>
 
-NoteHandler::NoteHandler() {
+NoteHandler::NoteHandler(GlobalFaultManager *global_fault_manager) {
+    global_fault_manager->register_manager(&fault_manager);
     //launcher
     ctre::phoenix6::configs::TalonFXConfiguration launcher_config = ctre::phoenix6::configs::TalonFXConfiguration();
     launcher_config.CurrentLimits.StatorCurrentLimit = 15;
@@ -14,10 +15,14 @@ NoteHandler::NoteHandler() {
 
     launcher_request.UpdateFreqHz = 0_Hz;
     
-    lower_left_launcher_motor.GetConfigurator().Apply(launcher_config);
-    upper_left_launcher_motor.GetConfigurator().Apply(launcher_config);
-    lower_right_launcher_motor.GetConfigurator().Apply(launcher_config);
-    upper_right_launcher_motor.GetConfigurator().Apply(launcher_config);
+    if (lower_left_launcher_motor.GetConfigurator().Apply(launcher_config) != ctre::phoenix::StatusCode::OK) 
+        fault_manager.add_fault(Fault(true, FaultIdentifier::lowerLeftLauncherUnreachable));
+    if (upper_left_launcher_motor.GetConfigurator().Apply(launcher_config) != ctre::phoenix::StatusCode::OK) 
+        fault_manager.add_fault(Fault(true, FaultIdentifier::upperLeftLauncherUnreachable));
+    if (lower_right_launcher_motor.GetConfigurator().Apply(launcher_config) != ctre::phoenix::StatusCode::OK) 
+        fault_manager.add_fault(Fault(true, FaultIdentifier::lowerRightLauncherUnreachable));
+    if (upper_right_launcher_motor.GetConfigurator().Apply(launcher_config) != ctre::phoenix::StatusCode::OK) 
+        fault_manager.add_fault(Fault(true, FaultIdentifier::upperRightLauncherUnreachable));
 
     lower_left_launcher_motor.SetInverted(false);
     upper_left_launcher_motor.SetInverted(false);
@@ -147,6 +152,7 @@ IntakeIndexingState NoteHandler::get_index_state() {
 }
 
 void NoteHandler::call(bool robot_enabled, bool autonomous) {
+    fault_manager.feed_watchdog();
     switch (tilt_calibration_state)
     {
     case TiltCalibrationState::uncalibrated:

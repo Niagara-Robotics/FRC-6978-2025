@@ -21,6 +21,8 @@ class Robot: frc::RobotBase {
     public:
     void StartCompetition() override;
     void EndCompetition() override;
+
+    GlobalFaultManager global_fm;
     
     Scheduler *drive_scheduler = new Scheduler("teleop");
 
@@ -30,7 +32,7 @@ class Robot: frc::RobotBase {
 
     Tracking tracking = Tracking(swerve_controller);
 
-    NoteHandler note_handler = NoteHandler();
+    NoteHandler note_handler = NoteHandler(&global_fm);
 
     AutoShot auto_shot = AutoShot(
         note_handler.launcher_mode_channel.get_handle(),
