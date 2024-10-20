@@ -14,7 +14,7 @@ public:
     bool expires = false;
     FaultIdentifier fault;
 
-    Fault(bool affect_subsystem, FaultIdentifier fault);
+    Fault(bool affect_subsystem, FaultIdentifier fault): affect_subsystem(affect_subsystem), fault(fault) {};
 };
 
 class FaultManager {
