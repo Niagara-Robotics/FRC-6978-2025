@@ -104,10 +104,25 @@ void NoteHandler::enable_tilt_softlimit() {
 }
 
 void NoteHandler::set_launcher_motors() {
-    upper_left_launcher_motor.SetControl(launcher_request);
-    upper_right_launcher_motor.SetControl(launcher_request);
-    lower_left_launcher_motor.SetControl(launcher_request);
-    lower_right_launcher_motor.SetControl(launcher_request);
+    if(upper_left_launcher_motor.SetControl(launcher_request) != ctre::phoenix::StatusCode::OK)
+        fault_manager.add_fault(Fault(true, FaultIdentifier::lowerLeftLauncherUnreachable));
+    else
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::lowerLeftLauncherUnreachable));
+
+    if(upper_right_launcher_motor.SetControl(launcher_request) != ctre::phoenix::StatusCode::OK)
+        fault_manager.add_fault(Fault(true, FaultIdentifier::lowerLeftLauncherUnreachable));
+    else
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::lowerLeftLauncherUnreachable));
+
+    if(lower_left_launcher_motor.SetControl(launcher_request) != ctre::phoenix::StatusCode::OK)
+        fault_manager.add_fault(Fault(true, FaultIdentifier::lowerLeftLauncherUnreachable));
+    else
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::lowerLeftLauncherUnreachable));
+        
+    if(lower_right_launcher_motor.SetControl(launcher_request) != ctre::phoenix::StatusCode::OK)
+        fault_manager.add_fault(Fault(true, FaultIdentifier::lowerLeftLauncherUnreachable));
+    else
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::lowerLeftLauncherUnreachable));
 }
 
 void NoteHandler::idle_launcher_motors() {
