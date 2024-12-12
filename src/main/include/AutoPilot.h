@@ -24,6 +24,7 @@ enum class AutoPilotTwistMode {
     heading,
     face,
     pose,
+    speaker,
     planner
 };
 
@@ -55,6 +56,35 @@ private:
     frc::SendableChooser<frc2::CommandPtr*> auto_chooser;
 
     frc2::CommandPtr centre_auto = std::move(frc2::FunctionalCommand(
+        [this]() { //init
+            close_shot_init();
+        },
+        [this]() { //execute
+            close_shot_exec();
+        },
+        [this](bool interrupted) { //stop
+            close_shot_kill(interrupted);
+        },
+        [this]() { //is finished
+            return close_shot_complete();
+        }
+    ).ToPtr());
+
+    frc2::CommandPtr exit_auto = std::move(frc2::FunctionalCommand(
+        [this]() { //init
+            close_shot_init();
+        },
+        [this]() { //execute
+            close_shot_exec();
+        },
+        [this](bool interrupted) { //stop
+            close_shot_kill(interrupted);
+        },
+        [this]() { //is finished
+            return close_shot_complete();
+        }
+    ).ToPtr());
+    frc2::CommandPtr right_exit_auto = std::move(frc2::FunctionalCommand(
         [this]() { //init
             close_shot_init();
         },

@@ -121,6 +121,16 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
         twist_handle.set(heading_proportional(target * 1.0_rad, tracking->get_pose().Rotation().Radians()));
         break;
     }
+
+    case AutoPilotTwistMode::speaker: {
+        if(std::chrono::steady_clock::now() < (tracking->get_speaker_pose().observation_time + std::chrono::milliseconds(250))) {
+            twist_handle.try_take_control();
+            twist_handle.set(heading_proportional(0.0_rad, tracking->get_speaker_pose().heading));
+        } else {
+            twist_handle.set(0_rad_per_s);
+        }
+        break;
+    }
     
     case AutoPilotTwistMode::none:
         twist_handle.set(0_rad_per_s);
@@ -137,11 +147,11 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
     if(autonomous) {
         frc::SmartDashboard::PutBoolean("null_auto", false);
         if(!auto_initialized) {
-            current_auto_command = auto_chooser.GetSelected()->get();
             if(auto_chooser.GetSelected() == nullptr) {
                 frc::SmartDashboard::PutBoolean("null_auto", true);
                 return;
             }
+            current_auto_command = auto_chooser.GetSelected()->get();
             current_auto_command->Schedule();
             current_auto_command->Initialize();
             current_auto_command->Execute();
