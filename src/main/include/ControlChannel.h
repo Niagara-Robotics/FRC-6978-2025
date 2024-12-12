@@ -63,6 +63,10 @@ public:
     bool set(T value) {
         return parent->set(id, value);
     };
+
+    T get() {
+        return parent->get();
+    };
     
     bool try_take_control() {
         return parent->take_control(id, true);
