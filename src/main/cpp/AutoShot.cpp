@@ -34,6 +34,7 @@ void AutoShot::call(bool robot_enabled, bool autonomous) {
 
         double interpolation_factor = (speaker_pose.distance - calibration_distances[lower_index]) / (calibration_distances[upper_index] - calibration_distances[lower_index]);
         locked_angle = calibration_angles[lower_index] + ((calibration_angles[upper_index] - calibration_angles[lower_index]) * interpolation_factor);
+        locked_angle += offset_channel.get();
         locked_speed = calibration_speeds[lower_index] + ((calibration_speeds[upper_index] - calibration_speeds[lower_index]) * interpolation_factor);
 
         if(speaker_pose.distance < calibration_distances[0]) {
@@ -62,6 +63,7 @@ void AutoShot::call(bool robot_enabled, bool autonomous) {
         if(locked_angle > 0.75_rad) locked_angle = 0.75_rad;
         if(locked_angle < 0.11_rad) locked_angle = 0.11_rad;
         frc::SmartDashboard::PutNumber("autoshot_angle", locked_angle.value());
+        frc::SmartDashboard::PutNumber("autoshot_offset", offset_channel.get().value());
         break;
     }
 }

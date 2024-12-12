@@ -39,12 +39,15 @@ private:
     };
 
     units::angular_velocity::turns_per_second_t calibration_speeds[CALIBRATION_MAP_SIZE] = {
-        50_tps,
-        55_tps,
         65_tps,
+        68_tps,
         75_tps,
+        80_tps,
         85_tps
     };
+
+    units::length::meter_t min_safe_distance = 2.15_m;
+    units::length::meter_t max_safe_distance = 3.0_m;
 
     units::angle::radian_t locked_angle;
     units::angular_velocity::turns_per_second_t locked_speed;
@@ -55,6 +58,7 @@ public:
     bool is_paused() override;
 
     controlchannel::ControlChannel<AutoShotMode> mode_channel = controlchannel::ControlChannel<AutoShotMode>(AutoShotMode::none);
+    controlchannel::ControlChannel<units::angle::radian_t> offset_channel = controlchannel::ControlChannel<units::angle::radian_t>(0.12_rad);
 
     AutoShot(
         controlchannel::ControlHandle<LauncherMode> launcher_mode_handle,
