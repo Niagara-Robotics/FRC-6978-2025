@@ -2,10 +2,10 @@
   "version": 1.0,
   "startingPose": {
     "position": {
-      "x": 15.81973317116685,
-      "y": 4.313193990543226
+      "x": 15.353684536072777,
+      "y": 7.017095645302402
     },
-    "rotation": 60.0
+    "rotation": 135.68853795798114
   },
   "command": {
     "type": "sequential",
@@ -14,13 +14,7 @@
         {
           "type": "named",
           "data": {
-            "name": "close_shot"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "farExit"
+            "name": "auto_shot"
           }
         }
       ]

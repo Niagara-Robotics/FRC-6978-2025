@@ -71,9 +71,13 @@ AutoPilot::AutoPilot(controlchannel::ControlHandle<PlanarSwerveRequest> planar_h
     ).ToPtr()));
 
     centre_auto = AutoBuilder::buildAuto("centre");
+    exit_auto = AutoBuilder::buildAuto("Far Exit");
+    exit_auto = AutoBuilder::buildAuto("right exit");
 
     auto_chooser.SetDefaultOption("centre", &centre_auto);
-    //auto_chooser.SetDefaultOption("none", nullptr);
+    auto_chooser.SetDefaultOption("left exit", &exit_auto);
+    auto_chooser.SetDefaultOption("right exit", &right_exit_auto);
+    auto_chooser.SetDefaultOption("none", nullptr);
     frc::SmartDashboard::PutData("auto", &auto_chooser);
     
 }
@@ -104,7 +108,7 @@ units::angular_velocity::radians_per_second_t AutoPilot::heading_proportional(un
 void AutoPilot::call(bool robot_enabled, bool autonomous) {
     frc::SmartDashboard::PutBoolean("auto_running", auto_running);
     frc::SmartDashboard::PutBoolean("auto_initialized", auto_initialized);
-    
+
     switch (twist_mode_channel.get())
     {
     case AutoPilotTwistMode::heading: {//heading PID
