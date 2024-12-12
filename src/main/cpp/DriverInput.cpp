@@ -4,7 +4,7 @@
 #include <frc/DriverStation.h>
 
 #define DEAD_ZONE 0.15
-#define xyMultiplier 3.0_mps
+#define xyMultiplier 2.0_mps
 #define wMultiplier 4.5_rad_per_s
 
 #define BUTTON_TAKE_CONTROL 2
@@ -54,17 +54,16 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         twist_handle.try_take_control();
 
     }
-    //y = 0;
-    planar_handle.set(PlanarSwerveRequest(x*xyMultiplier, y*xyMultiplier));
+
+    if(ap_twist_mode_handle.get() == AutoPilotTwistMode::none) {
+        twist_handle.try_take_control();
+    }
+
+    planar_handle.set(PlanarSwerveRequest(x*xyMultiplier, y*xyMultiplier, robot_relative));
     twist_handle.set(omega * wMultiplier);
 
-    if(js.GetRawButton(5)){
-        tracking->reset();
-    }
+    
 
-    if(js.GetRawButton(1)) {
-        tracking->set_gyro_angle(0_rad);
-    }
 
     if(js.GetRawButton(3)) {
         ap_twist_mode_handle.try_take_control();
@@ -96,34 +95,34 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
     default:
         break;
     }
-
-    if(js.GetRawButton(6)){
+    
+    if(js.GetRawButton(5)){
         index_mode_handle.try_take_control();
         index_mode_handle.set(IntakeIndexingMode::roll_in);
     } else {
         index_mode_handle.set(IntakeIndexingMode::stop);
     }
-    
-    if(js.GetRawButton(8)) {
-        launcher_mode_handle.try_take_control();
-        launcher_mode_handle.set(LauncherMode::velocity_interlock);
-    } else {
-        launcher_mode_handle.set(LauncherMode::idle);
-    }
 
-    if(js.GetRawButton(7)) {
+    if (js.GetRawButton(14)) { //drop tilt
         launcher_tilt_handle.try_take_control();
-        launcher_tilt_handle.set(frc::SmartDashboard::GetNumber("launcher_test_angle", 0.7)*1_rad);
-    } else if (js.GetRawButton(14)) {
         launcher_tilt_handle.set(0.05_rad);
+        auto_shot_mode_handle.try_take_control();
+        auto_shot_mode_handle.set(AutoShotMode::none);
     }
 
-    if(js.GetRawButton(9)) {
+    if(js.GetRawButton(8)) { //right trigger???
         auto_shot_mode_handle.try_take_control();
         auto_shot_mode_handle.set(AutoShotMode::shoot);
     } else {
         auto_shot_mode_handle.set(AutoShotMode::none);
     }
+
+    if(js.GetRawButton(10) && !last_rrel_button) {
+        robot_relative = !robot_relative;
+    }
+    last_rrel_button = js.GetRawButton(10);
+
+    frc::SmartDashboard::PutBoolean("robot_relative", robot_relative);
 
 }
 

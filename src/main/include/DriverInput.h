@@ -12,7 +12,7 @@
 class DriverInput : public Task
 {
 private:
-    frc::Joystick js = frc::Joystick(0);
+    frc::Joystick js = frc::Joystick(0); //DRIVER
     controlchannel::ControlHandle<PlanarSwerveRequest> planar_handle;
     controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle;
     controlchannel::ControlHandle<AutoPilotTwistMode> ap_twist_mode_handle;
@@ -26,6 +26,9 @@ private:
     controlchannel::ControlHandle<AutoShotMode> auto_shot_mode_handle;
 
     Tracking *tracking;
+
+    bool last_rrel_button = false;
+    bool robot_relative = false;
 public:
     DriverInput(
         controlchannel::ControlHandle<PlanarSwerveRequest> planar_handle, 
