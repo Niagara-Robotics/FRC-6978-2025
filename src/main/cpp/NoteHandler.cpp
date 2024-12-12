@@ -172,8 +172,8 @@ void NoteHandler::call(bool robot_enabled, bool autonomous) {
     {
     case TiltCalibrationState::uncalibrated:
         if(robot_enabled) { //cannot calibrate while the bot is disabled as it requires output
-            tilt_motor.SetControl(ctre::phoenix6::controls::VoltageOut(0.3_V));
-            tilt_calibration_end = std::chrono::steady_clock::now() + std::chrono::milliseconds(1000);
+            tilt_motor.SetControl(ctre::phoenix6::controls::VoltageOut(0.32_V));
+            tilt_calibration_end = std::chrono::steady_clock::now() + std::chrono::milliseconds(1400);
             tilt_calibration_state = TiltCalibrationState::calibrating;
             std::cout << "Started calibration" << std::endl;
         }
@@ -274,6 +274,7 @@ void NoteHandler::call(bool robot_enabled, bool autonomous) {
     
     frc::SmartDashboard::PutNumber("indexing_state", (int)indexing_state);
     frc::SmartDashboard::PutNumber("indexing_mode", (int)indexing_mode_channel.get());
+    frc::SmartDashboard::PutBoolean("indexer_holding", indexing_state == IntakeIndexingState::hold);
 }
 
 void NoteHandler::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
