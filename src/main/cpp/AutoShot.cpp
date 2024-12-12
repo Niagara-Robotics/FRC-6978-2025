@@ -44,6 +44,23 @@ void AutoShot::call(bool robot_enabled, bool autonomous) {
             locked_angle = calibration_angles[CALIBRATION_MAP_SIZE-1];
             locked_speed = calibration_speeds[CALIBRATION_MAP_SIZE-1];
         }
+
+        if(std::chrono::steady_clock::now() > (speaker_pose.observation_time + std::chrono::milliseconds(250))){
+            frc::SmartDashboard::PutString("autoshot_distance_status", "no tag");
+            frc::SmartDashboard::PutBoolean("autoshot_distance_okay", false);
+        } else if(speaker_pose.distance < min_safe_distance) {
+            frc::SmartDashboard::PutString("autoshot_distance_status", "too close");
+            frc::SmartDashboard::PutBoolean("autoshot_distance_okay", false);
+        } else if(speaker_pose.distance > max_safe_distance) {
+            frc::SmartDashboard::PutString("autoshot_distance_status", "too far");
+            frc::SmartDashboard::PutBoolean("autoshot_distance_okay", false);
+        } else {
+            frc::SmartDashboard::PutString("autoshot_distance_status", "okay");
+            frc::SmartDashboard::PutBoolean("autoshot_distance_okay", true);
+        }
+
+        if(locked_angle > 0.75_rad) locked_angle = 0.75_rad;
+        if(locked_angle < 0.11_rad) locked_angle = 0.11_rad;
         frc::SmartDashboard::PutNumber("autoshot_angle", locked_angle.value());
         break;
     }
