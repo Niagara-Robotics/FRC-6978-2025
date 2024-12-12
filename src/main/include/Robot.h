@@ -16,6 +16,7 @@
 #include "Tracking.h"
 #include "NoteHandler.h"
 #include "AutoShot.h"
+#include "OperatorInput.h"
 
 class Robot: frc::RobotBase {
     public:
@@ -62,6 +63,20 @@ class Robot: frc::RobotBase {
         note_handler.launcher_mode_channel.get_handle(),
         note_handler.tilt_channel.get_handle(),
         auto_shot.mode_channel.get_handle(),
+        &tracking
+    );
+
+    OperatorInput operator_input = OperatorInput(
+        swerve_controller->planar_velocity_channel.get_handle(), 
+        swerve_controller->twist_velocity_channel.get_handle(),
+        auto_pilot.twist_mode_channel.get_handle(),
+        auto_pilot.heading_channel.get_handle(),
+        note_handler.indexing_mode_channel.get_handle(),
+        note_handler.launcher_mode_channel.get_handle(),
+        note_handler.tilt_channel.get_handle(),
+        auto_shot.mode_channel.get_handle(),
+        auto_shot.offset_channel.get_handle(),
+        note_handler.launcher_velocity_channel.get_handle(),
         &tracking
     );
 
