@@ -11,6 +11,8 @@ Tracking::Tracking(SwerveController *swerve_controller):
     mxp = new AHRS(frc::SPI::Port::kMXP, 1000000, 254);
     mxp->ZeroYaw();
 
+    frc::SmartDashboard::PutBoolean("data_from_vision", false);
+
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     
     struct sockaddr_in servaddr;
@@ -115,25 +117,32 @@ void Tracking::handle_packet(char buf[256]) {
         }
     }
 
+    frc::SmartDashboard::PutBoolean("data_from_vision", true);
+
     
     if(hasCamera && hasRotation) {
         //check distance threshold
         if(distanceUsed > 2.8) return;
+        if(!camera_orientation_enabled) return;
         //check z threshold
         //if(z > 1.5) return;
         //discriminate based on discrepancies in yaw angle
-        if(distanceUsed < 1.9) {
-            //update orientation
-            set_gyro_angle(yaw * 1.0_rad);
-            gyro_degraded = false;
-        }
+        
         if(!gyro_degraded && fabs(yaw - current_rotation_estimate.Radians().value()) > 0.07) return;
 
         swerve_odometry->ResetPosition(frc::Rotation2d(current_rotation_estimate), swerve_controller->fetch_module_positions(), frc::Pose2d(frc::Translation2d(x * 1.0_mm, y * 1.0_mm), frc::Rotation2d(current_rotation_estimate)));
         //check and update orientation
-        
+        if(distanceUsed < 1.9 && camera_orientation_enabled) {
+            //update orientation
+            set_gyro_angle(yaw * 1.0_rad);
+            gyro_degraded = false;
+        }
         
     }
+}
+
+void Tracking::set_camera_orientation_enabled(bool enabled) {
+    camera_orientation_enabled = enabled;
 }
 
 SpeakerReport Tracking::get_speaker_pose() {
@@ -151,11 +160,16 @@ void Tracking::call(bool robot_enabled, bool autonomous) {
     }
     
     std::chrono::duration<double, std::ratio<1, 1>> gyro_delta = std::chrono::steady_clock::now() - mxp_update_timestamp;
-    current_rotation_estimate = recent_gyro_pose + gyro_offset + (gyro_rate * gyro_delta.count()) * 1.0;
+    current_rotation_estimate = recent_gyro_pose;
+    current_rotation_estimate = current_rotation_estimate.RotateBy(gyro_offset + (gyro_rate * gyro_delta.count()) * 1.0);
+    //current_rotation_estimate = current_rotation_estimate + gyro_offset + (gyro_rate * gyro_delta.count()) * 1.0;
 
     swerve_odometry->Update(current_rotation_estimate, swerve_controller->fetch_module_positions());
     odometry_pose_publisher.Set(swerve_odometry->GetPose());
     swerve_controller->set_chassis_rotation(swerve_odometry->GetPose().Rotation());
+
+    frc::SmartDashboard::PutBoolean("gyro_not_degraded", !gyro_degraded);
+    frc::SmartDashboard::PutBoolean("camera_orientation_enabled", camera_orientation_enabled);
 }
 
 frc::Pose2d Tracking::get_pose() {
@@ -172,7 +186,7 @@ void Tracking::reset() {
 
 void Tracking::reset_pose(frc::Pose2d pose) {
     set_gyro_angle(pose.Rotation());
-    swerve_odometry->ResetPosition(frc::Rotation2d(), swerve_controller->fetch_module_positions(), pose);
+    swerve_odometry->ResetPosition(pose.Rotation(), swerve_controller->fetch_module_positions(), pose);
 }
 
 void Tracking::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {

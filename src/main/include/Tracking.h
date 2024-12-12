@@ -40,6 +40,7 @@ private:
     AHRS *mxp;
 
     bool gyro_degraded = true;
+    bool camera_orientation_enabled = true;
 
     void update_gyro();
 
@@ -71,6 +72,8 @@ public:
     frc::Pose2d get_pose();
     void reset();
     void reset_pose(frc::Pose2d pose);
+
+    void set_camera_orientation_enabled(bool enabled);
 
     SpeakerReport get_speaker_pose();
 
