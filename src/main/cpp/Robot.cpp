@@ -20,6 +20,7 @@ void Robot::StartCompetition() {
     tracking_scheduler->register_task(&auto_pilot);
     tracking_scheduler->register_task(&tracking);
     tracking_scheduler->register_task(&auto_shot);
+    tracking_scheduler->register_task(&operator_input);
 
     HAL_ObserveUserProgramStarting();
     HAL_ObserveUserProgramDisabled();
