@@ -8,8 +8,8 @@ CommonSwerveModuleConfig::CommonSwerveModuleConfig(
     double drive_ratio,
     double steer_ratio,
     double couple_ratio,
-    double steer_acceleration,
-    double steer_velocity,
+    units::angular_acceleration::turns_per_second_squared_t steer_acceleration,
+    units::angular_velocity::turns_per_second_t steer_velocity,
     units::length::meter_t wheel_radius
 )
 {
@@ -34,7 +34,7 @@ SwerveModuleConfig::SwerveModuleConfig(
     int steer_encoder_id,
     int drive_motor_id,
     int steer_motor_id,
-    double steering_offset,
+    units::angle::turn_t steering_offset,
     bool drive_inverted,
     double position_X,
     double position_Y

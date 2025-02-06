@@ -1,6 +1,7 @@
 #include "Tracking.h"
 
 #include <frc/smartdashboard/SmartDashboard.h>
+#include <frc/SPI.h>
 #include <iostream>
 
 Tracking::Tracking(SwerveController *swerve_controller): 
@@ -8,7 +9,7 @@ Tracking::Tracking(SwerveController *swerve_controller):
 {
     swerve_odometry = new frc::SwerveDriveOdometry<4>(swerve_controller->get_kinematics(), frc::Rotation2d(), swerve_controller->fetch_module_positions());
     odometry_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "tracking/odometry_pose")).Publish();
-    mxp = new AHRS(frc::SPI::Port::kMXP, 1000000, 254);
+    mxp = new studica::AHRS(studica::AHRS::kMXP_SPI, 250);
     mxp->ZeroYaw();
 
     frc::SmartDashboard::PutBoolean("data_from_vision", false);
@@ -31,7 +32,7 @@ Tracking::Tracking(SwerveController *swerve_controller):
 void Tracking::update_gyro() {
     std::chrono::duration<double, std::ratio<1, 1>> delta_t = std::chrono::steady_clock::now() - mxp_update_timestamp;
     mxp_update_timestamp = std::chrono::steady_clock::now();
-    last_mxp_update_count = mxp->GetUpdateCount();
+    last_mxp_timestamp = mxp->GetLastSensorTimestamp();
 
     gyro_rate = (mxp->GetRotation2d() - recent_gyro_pose) / delta_t.count();
 
@@ -150,7 +151,7 @@ SpeakerReport Tracking::get_speaker_pose() {
 }
 
 void Tracking::call(bool robot_enabled, bool autonomous) {
-    if(mxp->GetUpdateCount() != last_mxp_update_count) {
+    if(mxp->GetLastSensorTimestamp() != last_mxp_timestamp) {
         update_gyro();
     }
 

@@ -15,11 +15,7 @@ void Robot::StartCompetition() {
     drive_scheduler->register_task(swerve_controller);
     drive_scheduler->register_task(&driver_input);
 
-    drive_scheduler->register_task(&note_handler);
-
-    tracking_scheduler->register_task(&auto_pilot);
     tracking_scheduler->register_task(&tracking);
-    tracking_scheduler->register_task(&auto_shot);
     tracking_scheduler->register_task(&operator_input);
 
     HAL_ObserveUserProgramStarting();
@@ -39,8 +35,6 @@ void Robot::StartCompetition() {
         if(enabled && !word.autonomous) {HAL_ObserveUserProgramTeleop();}
         else if(enabled && word.autonomous) {HAL_ObserveUserProgramAutonomous();}
         else {HAL_ObserveUserProgramDisabled();}
-
-        global_fm.refresh();
 
         frc::SmartDashboard::UpdateValues();
         usleep(8000);

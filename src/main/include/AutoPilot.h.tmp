@@ -7,8 +7,7 @@
 #include <frc/smartdashboard/SmartDashboard.h>
 #include <frc/smartdashboard/SendableChooser.h>
 #include <frc2/command/Command.h>
-#include "NoteHandler.h"
-#include "AutoShot.h"
+
 
 #include <pathplanner/lib/auto/AutoBuilder.h>
 

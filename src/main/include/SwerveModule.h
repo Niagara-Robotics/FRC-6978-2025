@@ -23,7 +23,8 @@ public:
     double steer_ratio; //rotor:azimuth rotation
     double couple_ratio; //drive rotor:azimuth rotation
 
-    double steer_acceleration, steer_velocity;
+    units::angular_acceleration::turns_per_second_squared_t steer_acceleration;
+    units::angular_velocity::turns_per_second_t steer_velocity;
 
     units::length::meter_t wheel_radius;
 
@@ -35,8 +36,8 @@ public:
         double drive_ratio,
         double steer_ratio,
         double couple_ratio,
-        double steer_acceleration,
-        double steer_velocity,
+        units::angular_acceleration::turns_per_second_squared_t steer_acceleration,
+        units::angular_velocity::turns_per_second_t steer_velocity,
         
         units::length::meter_t wheel_radius
     );
@@ -60,12 +61,12 @@ public:
     double steer_ratio; //rotor:azimuth rotation
     double couple_ratio; //drive rotor:azimuth rotation
 
-    double steer_acceleration;
-    double steer_velocity;
+    units::angular_acceleration::turns_per_second_squared_t steer_acceleration;
+    units::angular_velocity::turns_per_second_t steer_velocity;
 
     units::length::meter_t wheel_radius;
 
-    double steering_offset;
+    units::angle::turn_t steering_offset;
 
     double position_X;
     double position_Y;
@@ -75,7 +76,7 @@ public:
         int steer_encoder_id,
         int drive_motor_id,
         int steer_motor_id,
-        double steering_offset,
+        units::angle::turn_t steering_offset,
         bool drive_inverted,
         double position_X,
         double position_y

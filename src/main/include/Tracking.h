@@ -37,7 +37,8 @@ private:
     frc::Rotation2d gyro_offset;
     frc::Rotation2d gyro_rate;
     frc::Rotation2d current_rotation_estimate;
-    AHRS *mxp;
+    studica::AHRS *mxp;
+
 
     bool gyro_degraded = true;
     bool camera_orientation_enabled = true;
@@ -46,7 +47,7 @@ private:
 
     int sockfd;
 
-    double last_mxp_update_count;
+    double last_mxp_timestamp;
     std::chrono::time_point<std::chrono::steady_clock> mxp_update_timestamp;
 
     frc::SwerveDriveOdometry<4> *swerve_odometry;
