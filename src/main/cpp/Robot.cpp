@@ -13,10 +13,11 @@
 void Robot::StartCompetition() {
     std::cout << "Started Competition" << std::endl;
     drive_scheduler->register_task(swerve_controller);
-    drive_scheduler->register_task(&driver_input);
+    input_scheduler->register_task(&driver_input);
 
     tracking_scheduler->register_task(&tracking);
-    tracking_scheduler->register_task(&operator_input);
+
+    tracking_scheduler->register_task(&note_handler);
 
     HAL_ObserveUserProgramStarting();
     HAL_ObserveUserProgramDisabled();
@@ -31,19 +32,21 @@ void Robot::StartCompetition() {
 
         drive_scheduler->set_robot_status(enabled, word.autonomous);
         tracking_scheduler->set_robot_status(enabled, word.autonomous);
+        input_scheduler->set_robot_status(enabled, word.autonomous);
 
         if(enabled && !word.autonomous) {HAL_ObserveUserProgramTeleop();}
         else if(enabled && word.autonomous) {HAL_ObserveUserProgramAutonomous();}
         else {HAL_ObserveUserProgramDisabled();}
 
         frc::SmartDashboard::UpdateValues();
-        usleep(8000);
+        usleep(9000);
         if(should_exit) {
             break;
         }
     }
     drive_scheduler->~Scheduler();
     tracking_scheduler->~Scheduler();
+    input_scheduler->~Scheduler();
 }
 
 void Robot::EndCompetition() {

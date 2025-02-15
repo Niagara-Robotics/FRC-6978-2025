@@ -11,16 +11,26 @@
 #include "GyroInput.h"
 #include "ControlChannel.h"
 
-class PlanarSwerveRequest
+enum SwerveRequestType {
+    full,
+    full_robot_relative,
+    rover,
+    front_wheel_steer,
+    rear_wheel_steer
+};
+
+class LateralSwerveRequest
 {
 public:
     units::velocity::meters_per_second_t x;
     units::velocity::meters_per_second_t y;
-    bool robot_relative = false;
+    units::angle::turn_t steer;
 
-    PlanarSwerveRequest(units::velocity::meters_per_second_t x, units::velocity::meters_per_second_t y): x(x), y(y) {}
-    PlanarSwerveRequest(units::velocity::meters_per_second_t x, units::velocity::meters_per_second_t y, bool robot): x(x), y(y), robot_relative(robot) {}
-    PlanarSwerveRequest(): x(0), y(0) {}
+    SwerveRequestType request_type = SwerveRequestType::full;
+
+    LateralSwerveRequest(units::velocity::meters_per_second_t x, units::velocity::meters_per_second_t y): x(x), y(y) {}
+    LateralSwerveRequest(units::velocity::meters_per_second_t x, units::velocity::meters_per_second_t y, SwerveRequestType type): x(x), y(y), request_type(type) {}
+    LateralSwerveRequest(): x(0), y(0) {}
 };
 
 /**SwerveController manages kinematics and output to all swerve modules
@@ -40,8 +50,8 @@ private:
         .WithKS(0.02).WithKV(0.141).WithKA(0.004);
 
     ctre::phoenix6::configs::Slot0Configs steer_clc_gains = ctre::phoenix6::configs::Slot0Configs()
-        .WithKP(93.0).WithKI(0).WithKD(0)
-        .WithKS(0.14).WithKV(0.9).WithKA(0.0070);
+        .WithKP(83.0).WithKI(0).WithKD(0)
+        .WithKS(0.14).WithKV(1.3).WithKA(0.0070);
 
     ctre::phoenix6::configs::CurrentLimitsConfigs drive_current_limits = ctre::phoenix6::configs::CurrentLimitsConfigs()
         .WithStatorCurrentLimitEnable(true)
@@ -151,6 +161,8 @@ private:
         frc::SwerveModulePosition{0_m, frc::Rotation2d()}
     };
 
+    wpi::array<frc::SwerveModuleState, 4> target_states = wpi::array<frc::SwerveModuleState, 4>(wpi::empty_array);
+
     frc::SwerveDriveKinematics<4> kinematics = frc::SwerveDriveKinematics<4>(module_positions);
 
     frc::ChassisSpeeds target_chassis_speeds;
@@ -165,7 +177,7 @@ private:
     //ctre::phoenix6::hardware::TalonFX fake_talon = ctre::phoenix6::hardware::TalonFX(26);
 
 public:
-    controlchannel::ControlChannel<PlanarSwerveRequest> planar_velocity_channel = controlchannel::ControlChannel(PlanarSwerveRequest(0_mps, 0_mps));
+    controlchannel::ControlChannel<LateralSwerveRequest> planar_velocity_channel = controlchannel::ControlChannel(LateralSwerveRequest(0_mps, 0_mps));
     controlchannel::ControlChannel<units::angular_velocity::radians_per_second_t> twist_velocity_channel = controlchannel::ControlChannel(0_rad_per_s);
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
