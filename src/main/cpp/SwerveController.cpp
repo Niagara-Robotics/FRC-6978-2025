@@ -32,6 +32,15 @@ void SwerveController::call(bool robot_enabled, bool autonomous) {
     target_chassis_speeds.vy = lateral_request.y;
     target_chassis_speeds.omega = twist_velocity_channel.get();
 
+    if(planar_velocity_channel.has_control(-1)) {
+        target_chassis_speeds.vx = 0_mps;
+        target_chassis_speeds.vy = 0_mps;
+    }
+
+    if(twist_velocity_channel.has_control(-1)) {
+        target_chassis_speeds.omega = 0_rad_per_s;
+    }
+
     switch (lateral_request.request_type) {
         case full:
             target_states = kinematics.ToSwerveModuleStates(
