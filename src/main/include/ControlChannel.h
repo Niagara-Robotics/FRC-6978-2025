@@ -14,7 +14,7 @@ private:
     T value;
     std::chrono::time_point<std::chrono::steady_clock> last_set_time;
 
-    int controller_id = 0; // actual ids given out start at 1, 0 means nobody
+    int controller_id = -1; // actual ids given out start at 1, -1 means nobody, 0 means channel owner
     int id_counter = 0; 
     bool permissive = true;
     callback_t callback;
@@ -36,6 +36,12 @@ public:
         last_set_time = std::chrono::steady_clock::now();
         return true;
     };
+
+    void release(int id) {
+        if(!has_control(id)) return;
+        this->controller_id = -1;
+        this->permissive = true;
+    }
 
     T get() {
         return value;
@@ -67,6 +73,10 @@ public:
     T get() {
         return parent->get();
     };
+
+    void release() {
+        parent->release(id);
+    }
     
     bool try_take_control() {
         return parent->take_control(id, true);
