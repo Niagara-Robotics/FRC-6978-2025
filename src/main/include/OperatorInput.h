@@ -11,7 +11,7 @@ class OperatorInput : public Task
 {
 private:
     frc::Joystick js = frc::Joystick(1); //OPERATOR
-    controlchannel::ControlHandle<PlanarSwerveRequest> planar_handle;
+    controlchannel::ControlHandle<LateralSwerveRequest> planar_handle;
     controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle;
 
     Tracking *tracking;
@@ -19,7 +19,7 @@ private:
     int last_pov = -1;
 public:
     OperatorInput(
-        controlchannel::ControlHandle<PlanarSwerveRequest> planar_handle, 
+        controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
         Tracking *tracking):
         planar_handle(planar_handle), twist_handle(twist_handle) {

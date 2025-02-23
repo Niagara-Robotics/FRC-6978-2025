@@ -9,7 +9,7 @@ Tracking::Tracking(SwerveController *swerve_controller):
 {
     swerve_odometry = new frc::SwerveDriveOdometry<4>(swerve_controller->get_kinematics(), frc::Rotation2d(), swerve_controller->fetch_module_positions());
     odometry_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "tracking/odometry_pose")).Publish();
-    mxp = new studica::AHRS(studica::AHRS::kMXP_SPI, 250);
+    mxp = new studica::AHRS(studica::AHRS::kMXP_SPI, 200);
     mxp->ZeroYaw();
 
     frc::SmartDashboard::PutBoolean("data_from_vision", false);
@@ -171,6 +171,7 @@ void Tracking::call(bool robot_enabled, bool autonomous) {
 
     frc::SmartDashboard::PutBoolean("gyro_not_degraded", !gyro_degraded);
     frc::SmartDashboard::PutBoolean("camera_orientation_enabled", camera_orientation_enabled);
+    //frc::SmartDashboard::PutNumber("Rotation estimate", );
 }
 
 frc::Pose2d Tracking::get_pose() {

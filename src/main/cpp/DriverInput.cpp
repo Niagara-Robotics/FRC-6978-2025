@@ -4,7 +4,7 @@
 #include <frc/DriverStation.h>
 
 #define DEAD_ZONE 0.15
-#define xyMultiplier 2.0_mps
+#define xyMultiplier 1.0_mps
 #define wMultiplier 4.5_rad_per_s
 
 #define BUTTON_TAKE_CONTROL 2
@@ -47,12 +47,15 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         //std::cout << "grabbing handles" << std::endl;
         if(!planar_handle.try_take_control()) {
             std::cout << "Failed to grab planar handle" << std::endl;
+            fault_manager.add_fault(Fault(false, FaultIdentifier::driverTakeoverFailed));
+        } else {
+            fault_manager.clear_fault(Fault(false, FaultIdentifier::driverTakeoverFailed));
         }
 
         twist_handle.try_take_control();
     }
 
-    planar_handle.set(PlanarSwerveRequest(x*xyMultiplier, y*xyMultiplier, robot_relative));
+    planar_handle.set(LateralSwerveRequest(x*xyMultiplier, y*xyMultiplier, robot_relative? SwerveRequestType::full_robot_relative: SwerveRequestType::full));
     twist_handle.set(omega * wMultiplier);
 
     if(js.GetRawButton(10) && !last_rrel_button) {
@@ -60,8 +63,22 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
     }
     last_rrel_button = js.GetRawButton(10);
 
-    frc::SmartDashboard::PutBoolean("robot_relative", robot_relative);
+    frc::SmartDashboard::PutBoolean("input_robot_relative", robot_relative);
 
+    if(js.GetRawButton(8)) {
+        if (launcher_velocity_channel.try_take_control()) {
+            launcher_velocity_channel.set(45_tps);
+            launcher_mode_channel.try_take_control();
+            launcher_mode_channel.set(LauncherMode::velocity_interlock);
+        }
+    }
+
+    if(js.GetRawButton(3)) {
+        indexing_mode_channel.try_take_control();
+        indexing_mode_channel.set(IntakeIndexingMode::roll_in);
+    }
+
+    fault_manager.feed_watchdog();
 }
 
 void DriverInput::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {

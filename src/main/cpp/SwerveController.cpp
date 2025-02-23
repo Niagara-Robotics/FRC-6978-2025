@@ -16,7 +16,7 @@ SwerveController::SwerveController()
 }
 
 void SwerveController::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::microseconds(1880);
+    this->next_execution = current_time + std::chrono::microseconds(2000);
 }
 
 frc::SwerveDriveKinematics<4> SwerveController::get_kinematics() {
@@ -26,24 +26,34 @@ frc::SwerveDriveKinematics<4> SwerveController::get_kinematics() {
 void SwerveController::call(bool robot_enabled, bool autonomous) {
     std::chrono::time_point<std::chrono::steady_clock> start_time = std::chrono::steady_clock::now();
 
-    PlanarSwerveRequest planar_request = planar_velocity_channel.get();
+    LateralSwerveRequest lateral_request = planar_velocity_channel.get();
 
-    target_chassis_speeds.vx = planar_request.x;
-    target_chassis_speeds.vy = planar_request.y;
+    target_chassis_speeds.vx = lateral_request.x;
+    target_chassis_speeds.vy = lateral_request.y;
     target_chassis_speeds.omega = twist_velocity_channel.get();
-    
-    wpi::array<frc::SwerveModuleState, 4> states = (planar_request.robot_relative)? kinematics.ToSwerveModuleStates(target_chassis_speeds, frc::Translation2d(0.0_m,0.0_m)) : kinematics.ToSwerveModuleStates(frc::ChassisSpeeds::FromFieldRelativeSpeeds(target_chassis_speeds, current_rotation), frc::Translation2d(0.0_m,0.0_m));
 
-    double max_apply_time = 0;
-    std::list<std::future<void>> futures = std::list<std::future<void>>();
-
-    frc::SwerveModuleState test_state = frc::SwerveModuleState();
+    switch (lateral_request.request_type) {
+        case full:
+            target_states = kinematics.ToSwerveModuleStates(
+                frc::ChassisSpeeds::FromFieldRelativeSpeeds(target_chassis_speeds, current_rotation), 
+                frc::Translation2d(0.0_m,0.0_m));
+            break;
+        case full_robot_relative:
+            target_states = kinematics.ToSwerveModuleStates(target_chassis_speeds, frc::Translation2d(0.0_m,0.0_m));
+            break;
+        default:
+            target_states[0] = frc::SwerveModuleState();
+            target_states[1] = frc::SwerveModuleState();
+            target_states[2] = frc::SwerveModuleState();
+            target_states[3] = frc::SwerveModuleState();
+            break;
+    }
     
 
     for (size_t i = 0; i < 4; i++)
     {
         if(robot_enabled) {
-            modules[i]->apply(states[i]);
+            modules[i]->apply(target_states[i]);
         }
         else  {
             modules[i]->idle();
@@ -54,7 +64,7 @@ void SwerveController::call(bool robot_enabled, bool autonomous) {
 
     std::chrono::duration<double, std::micro> diff = std::chrono::steady_clock::now() - start_time;
 
-    frc::SmartDashboard::PutNumber("swerve_controller_total_time_percent", (diff.count() / 1880.0) * 100.0);
+    frc::SmartDashboard::PutNumber("swerve_controller_total_time_percent", (diff.count() / 2000.0) * 100.0);
 
     for (int i = 0; i < 4; i++)
     {
@@ -66,6 +76,7 @@ void SwerveController::call(bool robot_enabled, bool autonomous) {
 
 void SwerveController::set_chassis_rotation(frc::Rotation2d rotation) {
     current_rotation = rotation;
+    frc::SmartDashboard::PutNumber("swerveAngle", rotation.Radians().value());
 }
 
 wpi::array<frc::SwerveModulePosition, 4> SwerveController::fetch_module_positions() {
