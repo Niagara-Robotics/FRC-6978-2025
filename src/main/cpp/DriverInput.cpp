@@ -12,9 +12,20 @@
 void DriverInput::call(bool robot_enabled, bool autonomous) {
     if(autonomous) return;
     
-    double x = -js.GetRawAxis(1); //joystick y is robot x
-    double y = -js.GetRawAxis(0);
-    double omega = -js.GetRawAxis(2);
+    auto alliance = frc::DriverStation::GetAlliance();
+
+    double x,y,omega;
+
+    if(!js.IsConnected()) {
+        fault_manager.add_fault(Fault(false, FaultIdentifier::driverControllerUnreachable));
+        planar_handle.release();
+        twist_handle.release();
+        goto watchdog;
+    }
+
+    x = -js.GetRawAxis(1); //joystick y is robot x
+    y = -js.GetRawAxis(0);
+    omega = -js.GetRawAxis(2);
 
     x = (fabs(x) > DEAD_ZONE)? 
             ((x > 0)? 
@@ -37,7 +48,7 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         ) 
         : 0;
 
-    auto alliance = frc::DriverStation::GetAlliance();
+    
     if (alliance && alliance.value() == frc::DriverStation::Alliance::kRed) {
         x = -x;
         y = -y;
@@ -45,14 +56,12 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
     
     if(js.GetRawButton(BUTTON_TAKE_CONTROL)) {
         //std::cout << "grabbing handles" << std::endl;
-        if(!planar_handle.try_take_control()) {
+        if(!planar_handle.try_take_control() || !twist_handle.try_take_control()) {
             std::cout << "Failed to grab planar handle" << std::endl;
             fault_manager.add_fault(Fault(false, FaultIdentifier::driverTakeoverFailed));
         } else {
             fault_manager.clear_fault(Fault(false, FaultIdentifier::driverTakeoverFailed));
         }
-
-        twist_handle.try_take_control();
     }
 
     planar_handle.set(LateralSwerveRequest(x*xyMultiplier, y*xyMultiplier, robot_relative? SwerveRequestType::full_robot_relative: SwerveRequestType::full));
@@ -64,6 +73,8 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
     last_rrel_button = js.GetRawButton(10);
 
     frc::SmartDashboard::PutBoolean("input_robot_relative", robot_relative);
+
+    watchdog:
 
     fault_manager.feed_watchdog();
 }

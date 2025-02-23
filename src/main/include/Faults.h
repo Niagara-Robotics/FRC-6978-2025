@@ -6,5 +6,6 @@ enum class FaultIdentifier {
     lowerLeftLauncherUnreachable = 202,
     indexerUnreachable = 210,
     intakeUnreachable = 211,
-    driverTakeoverFailed = 300
+    driverTakeoverFailed = 300,
+    driverControllerUnreachable = 301,
 };
