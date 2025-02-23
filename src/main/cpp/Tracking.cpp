@@ -66,7 +66,7 @@ void Tracking::handle_packet(char buf[256]) {
     double distanceUsed = -1;
     int32_t tag_id = -1;
     double tag_heading;
-    //printf("Got ADC packet\n");
+
     for(int obj = 0; obj < object_count; obj++) {
         if(buf[3+offset] == 0x10 && buf[3+offset+1] == 0x00) { //camera observed robot position
             if(buf[3+offset+2] == 0x12) { //3d position from camera

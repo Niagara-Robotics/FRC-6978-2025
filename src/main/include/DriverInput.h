@@ -7,7 +7,6 @@
 #include "Tracking.h"
 #include <frc/smartdashboard/SmartDashboard.h>
 #include "FaultManager.h"
-#include "NoteHandler.h"
 
 
 class DriverInput : public Task
@@ -22,24 +21,15 @@ private:
     bool last_rrel_button = false;
     bool robot_relative = false;
 
-    controlchannel::ControlHandle<LauncherMode> launcher_mode_channel;
-    controlchannel::ControlHandle<units::angular_velocity::turns_per_second_t> launcher_velocity_channel;
-    controlchannel::ControlHandle<IntakeIndexingMode> indexing_mode_channel;
-
     FaultManager fault_manager = FaultManager("DriverInput");
 public:
     DriverInput(
         controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
-        controlchannel::ControlHandle<LauncherMode> launcher_mode_channel,
-        controlchannel::ControlHandle<units::angular_velocity::turns_per_second_t> launcher_velocity_channel,
-        controlchannel::ControlHandle<IntakeIndexingMode> indexing_mode_channel,
         GlobalFaultManager *global_fm,
         Tracking *tracking):
-        planar_handle(planar_handle), twist_handle(twist_handle),
-        launcher_mode_channel(launcher_mode_channel),
-        launcher_velocity_channel(launcher_velocity_channel),
-        indexing_mode_channel(indexing_mode_channel) {
+        planar_handle(planar_handle), twist_handle(twist_handle)
+        {
             frc::SmartDashboard::PutNumber("launcher_test_angle", 0.7);
             global_fm->register_manager(&fault_manager);
         }

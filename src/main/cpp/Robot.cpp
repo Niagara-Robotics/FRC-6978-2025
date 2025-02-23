@@ -17,8 +17,6 @@ void Robot::StartCompetition() {
 
     tracking_scheduler->register_task(&tracking);
 
-    tracking_scheduler->register_task(&note_handler);
-
     HAL_ObserveUserProgramStarting();
     HAL_ObserveUserProgramDisabled();
     std::cout << "Tasks registered\n";

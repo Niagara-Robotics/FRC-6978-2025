@@ -13,7 +13,6 @@
 #include "GyroInput.h"
 #include "DriverInput.h"
 #include "Tracking.h"
-#include "NoteHandler.h"
 
 #include "FaultManager.h"
 
@@ -34,14 +33,9 @@ class Robot: frc::RobotBase {
 
     Tracking tracking = Tracking(swerve_controller);
 
-    NoteHandler note_handler = NoteHandler(global_fault_manager);
-
     DriverInput driver_input = DriverInput(
         swerve_controller->planar_velocity_channel.get_handle(), 
         swerve_controller->twist_velocity_channel.get_handle(),
-        note_handler.launcher_mode_channel.get_handle(),
-        note_handler.launcher_velocity_channel.get_handle(),
-        note_handler.indexing_mode_channel.get_handle(),
         global_fault_manager,
         &tracking
     );

@@ -65,19 +65,6 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
 
     frc::SmartDashboard::PutBoolean("input_robot_relative", robot_relative);
 
-    if(js.GetRawButton(8)) {
-        if (launcher_velocity_channel.try_take_control()) {
-            launcher_velocity_channel.set(45_tps);
-            launcher_mode_channel.try_take_control();
-            launcher_mode_channel.set(LauncherMode::velocity_interlock);
-        }
-    }
-
-    if(js.GetRawButton(3)) {
-        indexing_mode_channel.try_take_control();
-        indexing_mode_channel.set(IntakeIndexingMode::roll_in);
-    }
-
     fault_manager.feed_watchdog();
 }
 
