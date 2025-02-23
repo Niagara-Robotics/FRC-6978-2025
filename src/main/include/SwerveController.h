@@ -46,12 +46,12 @@ private:
     bool enabled = false;
 
     ctre::phoenix6::configs::Slot0Configs drive_clc_gains = ctre::phoenix6::configs::Slot0Configs()
-        .WithKP(0.018).WithKI(0).WithKD(0)
-        .WithKS(0.02).WithKV(0.141).WithKA(0.004);
+        .WithKP(0.09).WithKI(0).WithKD(0)
+        .WithKS(0.14).WithKV(0.105).WithKA(0.0015);
 
     ctre::phoenix6::configs::Slot0Configs steer_clc_gains = ctre::phoenix6::configs::Slot0Configs()
-        .WithKP(83.0).WithKI(0).WithKD(0)
-        .WithKS(0.14).WithKV(1.3).WithKA(0.0070);
+        .WithKP(90.0).WithKI(0).WithKD(0)
+        .WithKS(0.148).WithKV(1.05).WithKA(0.005);
 
     ctre::phoenix6::configs::CurrentLimitsConfigs drive_current_limits = ctre::phoenix6::configs::CurrentLimitsConfigs()
         .WithStatorCurrentLimitEnable(true)
@@ -85,7 +85,7 @@ private:
         18.75, //steer ratio
         3.0, //couple ratio
         65_tr_per_s_sq, //steer acceleration
-        5.2_tps, //steer velocity(cruise)
+        4.8_tps, //steer velocity(cruise)
         1.92_in //wheel radius, 2 inches
     );
 
@@ -103,7 +103,7 @@ private:
         0, // steer encoder id
         0, // drive motor id
         1, // steer motor id
-        0.0676_tr, // steer offset
+        -0.1067_tr, // steer offset
         false,  // drive motor invert
         0.31,   // module position x
         0.31    // module position y
@@ -115,7 +115,7 @@ private:
         1, // steer encoder id
         2, // drive motor id
         3, // steer motor id
-        0.3298_tr, // steer offset
+        0.444336_tr, // steer offset
         true,  // drive motor invert
         0.31,   // module position x
         -0.31   // module position y
@@ -127,7 +127,7 @@ private:
         2, // steer encoder id
         4, // drive motor id
         5, // steer motor id
-        0.447_tr, // steer offset
+        0.3276_tr, // steer offset
         false, // drive motor invert
         -0.31, // module position x
         0.31   // module position y
@@ -139,7 +139,7 @@ private:
         3, // steer encoder id
         6, // drive motor id
         7, // steer motor id
-        -0.106_tr,// steer offset
+        0.0703_tr,// steer offset
         true, // drive motor invert
         -0.31, // module position x
         -0.31  // module position y

@@ -77,7 +77,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
 
     steer_motor->SetControl(*steer_control);
 
-    steer_motor->OptimizeBusUtilization(0_Hz, 2_s);
+    steer_motor->OptimizeBusUtilization(50_Hz, 2_s);
 
     wheel_circumference = config.wheel_radius * M_PI * 2;
     std::cout << "wheel circumference " << wheel_circumference.value() << std::endl;
@@ -163,8 +163,8 @@ void SwerveModule::idle() {
     if(BaseStatusSignal::RefreshAll(*steering_position, *steering_velocity) != 0) {
         this->state = 10;
     }
-    steer_motor->SetControl(ctre::phoenix6::controls::CoastOut());
-    drive_motor->SetControl(ctre::phoenix6::controls::CoastOut());
+    //steer_motor->SetControl(ctre::phoenix6::controls::CoastOut());
+    //drive_motor->SetControl(ctre::phoenix6::controls::CoastOut());
 }
 
 int SwerveModule::get_state() {
