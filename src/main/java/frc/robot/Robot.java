@@ -39,7 +39,7 @@ public class Robot extends TimedRobot {
 
   Joystick js = new Joystick(0);
 
-  TalonFX liftMotor = new TalonFX(60,"rio");
+  TalonFX liftMotor = new TalonFX(10,"rio");
 
   StatusSignal<Current> outputCurrent;
 
@@ -53,8 +53,8 @@ public class Robot extends TimedRobot {
     //rotate motor
     TalonFXConfiguration liftConfig = new TalonFXConfiguration();
     
-    liftConfig.Voltage.PeakForwardVoltage = 12.5;
-    liftConfig.Voltage.PeakReverseVoltage = -12.5;
+    liftConfig.Voltage.PeakForwardVoltage = 2.5;
+    liftConfig.Voltage.PeakReverseVoltage = -2.5;
     liftConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     liftConfig.Feedback.SensorToMechanismRatio = 50.0;
     liftConfig.Slot0.kP = 35.0;
@@ -81,6 +81,7 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     BaseStatusSignal.refreshAll(outputCurrent);
     SmartDashboard.putNumber("outputCurrent", outputCurrent.getValueAsDouble());
+    SmartDashboard.putNumber("position", liftMotor.getPosition().getValueAsDouble());
   }
 
   /**
@@ -121,12 +122,12 @@ public class Robot extends TimedRobot {
             : 0;
     
     if(js.getRawButton(8)){
-      liftMotor.setControl(new VoltageOut(x*2.5));
-      //liftMotor.setControl(new PositionVoltage(0.0));
+      //liftMotor.setControl(new VoltageOut(x*2.5));
+      liftMotor.setControl(new PositionVoltage(0.1));
       SmartDashboard.putNumber("voltageOut", x*2.5);
     } else if(js.getRawButton(7)){
       //liftMotor.setControl(new VoltageOut(x*1.5));
-      //liftMotor.setControl(new PositionVoltage(3.0));
+      liftMotor.setControl(new PositionVoltage(1.0));
       SmartDashboard.putNumber("voltageOut", x*2.5);
     } else {
       liftMotor.setControl(new StaticBrake());
