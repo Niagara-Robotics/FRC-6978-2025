@@ -8,15 +8,23 @@ package frc.robot;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.StaticBrake;
 import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.revrobotics.ColorSensorV3.LEDCurrent;
+import com.revrobotics.ColorSensorV3.LEDPulseFrequency;
+import com.revrobotics.ColorSensorV3.ProximitySensorMeasurementRate;
+import com.revrobotics.ColorSensorV3.ProximitySensorResolution;
 
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
@@ -40,6 +48,19 @@ public class Robot extends TimedRobot {
   Joystick js = new Joystick(0);
 
   TalonFX liftMotor = new TalonFX(10,"rio");
+  TalonFX shoulderMotor = new TalonFX(20,"rio");
+  CANcoder shoulderEncoder = new CANcoder(20, "rio");
+
+  TalonFX rotateMotor = new TalonFX(30, "rio");
+  TalonFX rollerMotor = new TalonFX(31, "rio");
+  TalonFX sideRollerMotor = new TalonFX(32, "rio");
+
+  CANcoder rotateEncoder = new CANcoder(30, "rio");
+
+
+  StatusSignal<Current> rotateCurrentSignal;
+  StatusSignal<Angle> rotatePositionSignal;
+  StatusSignal<Temperature> rotateTempSignal;
 
   StatusSignal<Current> outputCurrent;
 
@@ -50,7 +71,30 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     
-    //rotate motor
+    CANcoderConfiguration shoulderEncoderConfig = new CANcoderConfiguration();
+
+    shoulderEncoderConfig.MagnetSensor.MagnetOffset = 0.1413;
+
+    shoulderEncoder.getConfigurator().apply(shoulderEncoderConfig);
+
+    TalonFXConfiguration shoulderConfig = new TalonFXConfiguration();
+
+    shoulderConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+    shoulderConfig.Voltage.PeakForwardVoltage = 1.0;
+    shoulderConfig.Voltage.PeakReverseVoltage = -2.0;
+    shoulderConfig.CurrentLimits.StatorCurrentLimit = 13;
+    shoulderConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+    shoulderConfig.Feedback.SensorToMechanismRatio = 100;
+    shoulderConfig.Slot0.kP = 120;
+    shoulderConfig.Slot0.kS = 0.2;
+    shoulderConfig.Slot0.kV = 2.2;
+    shoulderConfig.Slot0.kA = 0.3;
+    shoulderConfig.MotionMagic.MotionMagicAcceleration = 2.5;
+    shoulderConfig.MotionMagic.MotionMagicCruiseVelocity = 0.8;
+
+    shoulderMotor.getConfigurator().apply(shoulderConfig);
+    shoulderMotor.setPosition(shoulderEncoder.getPosition().getValue());
+
     TalonFXConfiguration liftConfig = new TalonFXConfiguration();
     
     liftConfig.Voltage.PeakForwardVoltage = 2.5;
@@ -68,6 +112,54 @@ public class Robot extends TimedRobot {
     liftMotor.setPosition(0.0);
 
     outputCurrent = liftMotor.getStatorCurrent();
+
+    CANcoderConfiguration rotateEncoderConfiguration = new CANcoderConfiguration();
+    rotateEncoderConfiguration.MagnetSensor.MagnetOffset = -0.186;
+    rotateEncoderConfiguration.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+
+    rotateEncoder.getConfigurator().apply(rotateEncoderConfiguration);
+    
+
+    //rotate motor
+    TalonFXConfiguration rotateConfig = new TalonFXConfiguration();
+    
+    rotateConfig.Voltage.PeakForwardVoltage = 0.5;
+    rotateConfig.Voltage.PeakReverseVoltage = -0.5;
+    rotateConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    rotateConfig.Feedback.FeedbackRemoteSensorID = 30;
+    //rotateConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+    rotateConfig.Slot0.kP = 100.0;
+    rotateConfig.Slot0.kD = 0.0;
+    rotateConfig.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
+    rotateConfig.Slot0.kG = 0.0;
+    rotateConfig.CurrentLimits.StatorCurrentLimit = 20;
+    rotateConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+    rotateConfig.Feedback.SensorToMechanismRatio = 100;
+    rotateConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+    rotateMotor.getConfigurator().apply(rotateConfig);
+    rotateMotor.setPosition(rotateEncoder.getAbsolutePosition().getValueAsDouble() - 0.25);
+
+    rotateTempSignal = rotateMotor.getDeviceTemp();
+    rotateTempSignal.setUpdateFrequency(100);
+
+    rotateCurrentSignal = rotateMotor.getStatorCurrent();
+    rotateCurrentSignal.setUpdateFrequency(100);
+    rotatePositionSignal = rotateMotor.getPosition();
+    rotatePositionSignal.setUpdateFrequency(100);
+
+    //rollers
+    TalonFXConfiguration rollerConfiguration = new TalonFXConfiguration();
+
+    rollerConfiguration.Voltage.PeakForwardVoltage = 1.0;
+    rollerConfiguration.Voltage.PeakReverseVoltage = -1.0;
+    rollerConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    rollerConfiguration.CurrentLimits.StatorCurrentLimit = 20;
+    rollerConfiguration.CurrentLimits.StatorCurrentLimitEnable = true;
+
+    rollerMotor.getConfigurator().apply(rollerConfiguration);
+
+    rollerConfiguration.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+    sideRollerMotor.getConfigurator().apply(rollerConfiguration);
   }
 
   /**
@@ -81,7 +173,8 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     BaseStatusSignal.refreshAll(outputCurrent);
     SmartDashboard.putNumber("outputCurrent", outputCurrent.getValueAsDouble());
-    SmartDashboard.putNumber("position", liftMotor.getPosition().getValueAsDouble());
+    SmartDashboard.putNumber("liftPosition", liftMotor.getPosition().getValueAsDouble());
+    SmartDashboard.putNumber("shoulderPosition", shoulderMotor.getPosition().getValueAsDouble());
   }
 
   /**
@@ -121,16 +214,22 @@ public class Robot extends TimedRobot {
             )
             : 0;
     
-    if(js.getRawButton(8)){
-      //liftMotor.setControl(new VoltageOut(x*2.5));
-      liftMotor.setControl(new PositionVoltage(0.1));
-      SmartDashboard.putNumber("voltageOut", x*2.5);
-    } else if(js.getRawButton(7)){
-      //liftMotor.setControl(new VoltageOut(x*1.5));
-      liftMotor.setControl(new PositionVoltage(1.0));
-      SmartDashboard.putNumber("voltageOut", x*2.5);
+    rotateMotor.setControl(new PositionVoltage(0));
+
+
+    if(js.getRawButton(8)) {
+      shoulderMotor.setControl(new MotionMagicVoltage(0.052));
+
     } else {
-      liftMotor.setControl(new StaticBrake());
+      shoulderMotor.setControl(new StaticBrake());
+    }
+
+    if(js.getRawButton(7) && shoulderEncoder.getAbsolutePosition().getValueAsDouble() > 0.05){
+      //liftMotor.setControl(new VoltageOut(x*1.5));
+      liftMotor.setControl(new PositionVoltage(0.6));
+      //SmartDashboard.putNumber("voltageOut", x*2.5);
+    } else {
+      liftMotor.setControl(new PositionVoltage(0.1));
     }
   }
 
