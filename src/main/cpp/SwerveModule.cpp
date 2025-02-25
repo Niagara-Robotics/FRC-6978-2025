@@ -77,7 +77,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
 
     steer_motor->SetControl(*steer_control);
 
-    steer_motor->OptimizeBusUtilization(50_Hz, 2_s);
+    steer_motor->OptimizeBusUtilization(0_Hz, 2_s);
 
     wheel_circumference = config.wheel_radius * M_PI * 2;
     std::cout << "wheel circumference " << wheel_circumference.value() << std::endl;
