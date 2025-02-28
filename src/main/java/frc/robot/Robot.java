@@ -55,6 +55,8 @@ public class Robot extends TimedRobot {
   TalonFX rollerMotor = new TalonFX(31, "rio");
   TalonFX sideRollerMotor = new TalonFX(32, "rio");
 
+  TalonFX gripperMotor = new TalonFX(22,"rio");
+
   CANcoder rotateEncoder = new CANcoder(30, "rio");
 
 
@@ -63,6 +65,13 @@ public class Robot extends TimedRobot {
   StatusSignal<Temperature> rotateTempSignal;
 
   StatusSignal<Current> outputCurrent;
+
+  double calibrationStartTime = 0;
+
+  boolean rotateCalibrated = false;
+
+  double targetLiftPosition = 0.1;
+  double targetShoulderPosition = 0.0;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -160,6 +169,19 @@ public class Robot extends TimedRobot {
 
     rollerConfiguration.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
     sideRollerMotor.getConfigurator().apply(rollerConfiguration);
+
+    TalonFXConfiguration gripperConfiguration = new TalonFXConfiguration();
+
+    gripperConfiguration.Voltage.PeakForwardVoltage = 12.0;
+    gripperConfiguration.Voltage.PeakReverseVoltage = -12.0;
+    gripperConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    gripperConfiguration.CurrentLimits.StatorCurrentLimit = 20;
+    gripperConfiguration.CurrentLimits.StatorCurrentLimitEnable = true;
+
+    gripperMotor.getConfigurator().apply(gripperConfiguration);
+
+    SmartDashboard.putNumber("liftCustomPosition", 0.7);
+    SmartDashboard.putNumber("shoulderCustomPosition", 0.042);
   }
 
   /**
@@ -199,7 +221,10 @@ public class Robot extends TimedRobot {
   /** This function is called once when teleop is enabled. */
   @Override
   public void teleopInit() {
-
+    calibrationStartTime = System.nanoTime() / 1000000000.0;
+    rotateMotor.setControl(new VoltageOut(-0.1));
+    targetLiftPosition = 0.1;
+    targetShoulderPosition = 0.0;
   }
 
   /** This function is called periodically during operator control. */
@@ -214,22 +239,51 @@ public class Robot extends TimedRobot {
             )
             : 0;
     
-    rotateMotor.setControl(new PositionVoltage(0));
-
-
-    if(js.getRawButton(8)) {
-      shoulderMotor.setControl(new MotionMagicVoltage(0.052));
-
-    } else {
-      shoulderMotor.setControl(new StaticBrake());
+    if(!rotateCalibrated && ((System.nanoTime() / 1000000000.0) - calibrationStartTime) > 0.8
+     && rotateEncoder.getAbsolutePosition().getValueAsDouble() - 0.25 < -0.31) {
+      rotateMotor.setPosition(rotateEncoder.getAbsolutePosition().getValueAsDouble() - 0.25);
+      rotateMotor.setControl(new NeutralOut());
+      rotateCalibrated = true;
+      System.out.println("Calibrated rotation");
     }
 
-    if(js.getRawButton(7) && shoulderEncoder.getAbsolutePosition().getValueAsDouble() > 0.05){
+    if(rotateCalibrated) rotateMotor.setControl(new PositionVoltage(-0.265));
+
+    if(js.getRawButton(8)) {
+      targetShoulderPosition = 0.042;
+    } else if(js.getRawButton(2)) {
+      targetShoulderPosition = 0;
+    } else if(js.getRawButton(6)) {
+      targetShoulderPosition = SmartDashboard.getNumber("shoulderCustomPosition", 0.042);
+    }
+
+    targetShoulderPosition = (targetShoulderPosition < 0.0)? 0.0:targetShoulderPosition;
+    targetShoulderPosition = (targetShoulderPosition > 0.2)? 0.2:targetShoulderPosition;
+
+    shoulderMotor.setControl(new MotionMagicVoltage(targetShoulderPosition));
+
+    if(js.getRawButton(7)){
       //liftMotor.setControl(new VoltageOut(x*1.5));
-      liftMotor.setControl(new PositionVoltage(0.6));
+      targetLiftPosition = 0.6;
       //SmartDashboard.putNumber("voltageOut", x*2.5);
+    } else if(js.getRawButton(5)) {
+      targetLiftPosition = SmartDashboard.getNumber("liftCustomPosition", 0.1);
+    } else if(js.getRawButton(1)) {
+      targetLiftPosition = 0.1;
+    }
+
+    if(shoulderEncoder.getAbsolutePosition().getValueAsDouble() > 0.04) {
+      targetLiftPosition = (targetLiftPosition < 0.1)? 0.1:targetLiftPosition;
+      targetLiftPosition = (targetLiftPosition > 2.5)? 2.5:targetLiftPosition;
+      liftMotor.setControl(new PositionVoltage(targetLiftPosition));
     } else {
       liftMotor.setControl(new PositionVoltage(0.1));
+    }
+
+    if(js.getRawButton(3)) {
+      gripperMotor.setControl(new VoltageOut(1.5));
+    } else {
+      gripperMotor.setControl(new NeutralOut());
     }
   }
 
