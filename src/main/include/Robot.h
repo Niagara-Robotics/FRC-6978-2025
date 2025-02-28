@@ -18,6 +18,9 @@
 
 #include "OperatorInput.h"
 
+#include <grpl/CanBridge.h>
+
+
 class Robot: frc::RobotBase {
     public:
     void StartCompetition() override;
