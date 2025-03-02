@@ -7,6 +7,7 @@
 #include "Tracking.h"
 #include <frc/smartdashboard/SmartDashboard.h>
 #include "FaultManager.h"
+#include "Intake.h"
 
 
 class DriverInput : public Task
@@ -15,6 +16,8 @@ private:
     frc::Joystick js = frc::Joystick(0); //DRIVER
     controlchannel::ControlHandle<LateralSwerveRequest> planar_handle;
     controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle;
+
+    controlchannel::ControlHandle<intake::IntakeAction> intake_handle;
 
     Tracking *tracking;
 
@@ -26,9 +29,10 @@ public:
     DriverInput(
         controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
+        controlchannel::ControlHandle<intake::IntakeAction> intake_handle,
         GlobalFaultManager *global_fm,
         Tracking *tracking):
-        planar_handle(planar_handle), twist_handle(twist_handle)
+        planar_handle(planar_handle), twist_handle(twist_handle), intake_handle(intake_handle)
         {
             frc::SmartDashboard::PutNumber("launcher_test_angle", 0.7);
             global_fm->register_manager(&fault_manager);

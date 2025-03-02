@@ -19,7 +19,16 @@ void FaultManager::clear_fault(Fault new_fault) {
             return;
         }
     }
+}
 
+bool FaultManager::get_fault(FaultIdentifier id, Fault *fault) {
+    for(std::vector<Fault>::iterator it=faults.begin(); it != faults.end(); it++) {
+        if((*it).fault == id) {
+            if(fault != nullptr) *fault = (*it);
+            return true;
+        }
+    }
+    return false;
 }
 
 void FaultManager::feed_watchdog() {

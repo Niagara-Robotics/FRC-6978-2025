@@ -4,7 +4,7 @@
 #include <frc/DriverStation.h>
 
 #define DEAD_ZONE 0.15
-#define xyMultiplier 1.0_mps
+#define xyMultiplier 3.0_mps
 #define wMultiplier 4.5_rad_per_s
 
 #define BUTTON_TAKE_CONTROL 2
@@ -73,6 +73,23 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
     last_rrel_button = js.GetRawButton(10);
 
     frc::SmartDashboard::PutBoolean("input_robot_relative", robot_relative);
+
+    if(js.GetRawButton(1)) {
+        intake_handle.try_take_control();
+        intake_handle.set(intake::IntakeAction::pickup_algae);
+    }
+    if(js.GetRawButton(3)) {
+        intake_handle.try_take_control();
+        intake_handle.set(intake::IntakeAction::eject_algae);
+    }
+    if(js.GetRawButton(4)) {
+        intake_handle.try_take_control();
+        intake_handle.set(intake::IntakeAction::standby);
+    }
+    if(js.GetRawButton(6)) {
+        intake_handle.try_take_control();
+        intake_handle.set(intake::IntakeAction::pickup_coral);
+    }
 
     watchdog:
 

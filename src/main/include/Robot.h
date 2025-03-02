@@ -19,6 +19,9 @@
 #include "OperatorInput.h"
 
 #include <grpl/CanBridge.h>
+#include <grpl/LaserCan.h>
+
+#include "Intake.h"
 
 
 class Robot: frc::RobotBase {
@@ -36,9 +39,12 @@ class Robot: frc::RobotBase {
 
     Tracking tracking = Tracking(swerve_controller);
 
+    intake::Intake intake = intake::Intake();
+
     DriverInput driver_input = DriverInput(
         swerve_controller->planar_velocity_channel.get_handle(), 
         swerve_controller->twist_velocity_channel.get_handle(),
+        intake.intake_action_channel.get_handle(),
         global_fault_manager,
         &tracking
     );
@@ -48,6 +54,8 @@ class Robot: frc::RobotBase {
         swerve_controller->twist_velocity_channel.get_handle(),
         &tracking
     );
+
+    
 
     bool should_exit = false;
 };

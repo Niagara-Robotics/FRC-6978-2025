@@ -29,6 +29,7 @@ public:
 
     void add_fault(Fault fault);
     void clear_fault(Fault fault);
+    bool get_fault(FaultIdentifier id, Fault *fault);
     void feed_watchdog();
 
     bool get_status();

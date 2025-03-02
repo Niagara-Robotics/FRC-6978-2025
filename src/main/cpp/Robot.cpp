@@ -16,6 +16,9 @@ void Robot::StartCompetition() {
     input_scheduler->register_task(&driver_input);
 
     tracking_scheduler->register_task(&tracking);
+    tracking_scheduler->register_task(&intake);
+
+    //grpl::start_can_bridge();
 
     HAL_ObserveUserProgramStarting();
     HAL_ObserveUserProgramDisabled();
