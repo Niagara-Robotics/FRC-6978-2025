@@ -37,6 +37,12 @@ enum class IntakeState {
     coral_vertical_b
 };
 
+enum class IntakeClearanceLevel {
+    none,
+    lift_only,
+    bay
+};
+
 class Intake  : public Task
 {
 private:

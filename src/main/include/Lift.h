@@ -11,6 +11,12 @@
 
 #include "Intake.h"
 
+enum class LiftMechanismState {
+    park,
+    pick,
+    place
+};
+
 class Lift : public Task
 {
 private:
@@ -46,6 +52,9 @@ private:
     const units::angle::turn_t max_lift_position = 3.0_tr;
     const units::angle::turn_t lift_park_position = 0.1_tr;
 
+    const units::angle::turn_t lift_min_bay_position = 1.5_tr; //minimum position if the claw is in the bay
+    const units::angle::turn_t lift_min_bay_traverse_position = 2.0_tr; //minimum position if the claw is 
+
     ctre::phoenix6::StatusSignal<units::angle::turn_t> lift_position = lift_motor.GetPosition();
 
     ctre::phoenix6::controls::MotionMagicVoltage lift_control = ctre::phoenix6::controls::MotionMagicVoltage(0_tr);
@@ -80,6 +89,8 @@ private:
 
     const units::angle::turn_t shoulder_park_position = 0_tr;
     const units::angle::turn_t shoulder_clear_position = 0.1_tr;
+    const units::angle::turn_t shoulder_bay_exit_limit = 0.48_tr; //when the claw is in the bay
+    const units::angle::turn_t shoulder_bay_enter_limit = 0.35_tr; //when the claw is NOT in the bay
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> shoulder_motor_position = shoulder_motor.GetPosition();
 
@@ -94,11 +105,18 @@ private:
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> shoulder_encoder_position = shoulder_motor.GetPosition();
 
+    //state
     units::angle::turn_t target_shoulder_position;
     units::angle::turn_t target_lift_position = lift_park_position;
 
+    LiftMechanismState current_mechanism_state = LiftMechanismState::park;
+    LiftMechanismState target_mechanism_state = LiftMechanismState::park;
+
     controlchannel::ControlHandle<bool> get_out_handle;
     intake::Intake *intake;
+
+    units::angle::turn_t filter_lift_position(units::angle::turn_t input);
+    units::angle::turn_t filter_shoulder_position(units::angle::turn_t input);
 
 public:
 
