@@ -14,9 +14,11 @@ void Robot::StartCompetition() {
     std::cout << "Started Competition" << std::endl;
     drive_scheduler->register_task(swerve_controller);
     input_scheduler->register_task(&driver_input);
+    input_scheduler->register_task(&operator_input);
 
     tracking_scheduler->register_task(&tracking);
     tracking_scheduler->register_task(&intake);
+    tracking_scheduler->register_task(&lift);
 
     //grpl::start_can_bridge();
 

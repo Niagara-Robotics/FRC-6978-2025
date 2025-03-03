@@ -22,6 +22,7 @@
 #include <grpl/LaserCan.h>
 
 #include "Intake.h"
+#include "Lift.h"
 
 
 class Robot: frc::RobotBase {
@@ -41,6 +42,8 @@ class Robot: frc::RobotBase {
 
     intake::Intake intake = intake::Intake();
 
+    Lift lift = Lift(&intake);
+
     DriverInput driver_input = DriverInput(
         swerve_controller->planar_velocity_channel.get_handle(), 
         swerve_controller->twist_velocity_channel.get_handle(),
@@ -54,8 +57,6 @@ class Robot: frc::RobotBase {
         swerve_controller->twist_velocity_channel.get_handle(),
         &tracking
     );
-
-    
 
     bool should_exit = false;
 };

@@ -22,7 +22,7 @@ public:
         controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
         Tracking *tracking):
-        planar_handle(planar_handle), twist_handle(twist_handle) {
+        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking) {
             frc::SmartDashboard::PutNumber("launcher_test_angle", 0.7);
         }
 
