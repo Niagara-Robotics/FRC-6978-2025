@@ -76,7 +76,7 @@ void Intake::handle_pickup_algae() {
         rotate_target_position = algae_hold_position;
         horizontal_control.Output = 0_V;
         if(intake_sensor.get_measurement().has_value())
-            if((intake_sensor.get_measurement().value().distance_mm > algae_lock_threshold + 65 &&
+            if((intake_sensor.get_measurement().value().distance_mm > algae_lock_threshold + 145 &&
                 intake_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT) ||
                 intake_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_OUT_OF_BOUNDS) {
                 state = IntakeState::standby;
@@ -131,8 +131,11 @@ void Intake::handle_pickup_coral() {
         if(intake_sensor.get_measurement().has_value())
             if(intake_sensor.get_measurement().value().distance_mm < coral_a_threshold &&
                 intake_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
-                intake_sensor.get_measurement().value().ambient < 32)
+                intake_sensor.get_measurement().value().ambient < 32) 
+            {
                 state = IntakeState::coral_horizontal;
+                coral_horizontal_start = std::chrono::steady_clock::now();
+            }
             else break;
         else break;
     case IntakeState::coral_horizontal:
@@ -142,13 +145,14 @@ void Intake::handle_pickup_coral() {
         if(intake_sensor.get_measurement().has_value())
             if(intake_sensor.get_measurement().value().distance_mm < coral_horizontal_threshold &&
                 intake_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
-                intake_sensor.get_measurement().value().ambient < 32)
+                intake_sensor.get_measurement().value().ambient < 32 && 
+                std::chrono::steady_clock::now() - coral_horizontal_start > std::chrono::milliseconds(900))
                 state = IntakeState::coral_vertical_b;
         break;
     case IntakeState::coral_vertical_b:
         rotate_target_position = coral_vertical_b_position;
         vertical_control.Output = vertical_coral_b_voltage;
-        horizontal_control.Output = 0_V;
+        horizontal_control.Output = horizontal_coral_voltage;
         if(staging_sensor.get_measurement().has_value())
             if(staging_sensor.get_measurement().value().distance_mm < coral_hold_threshold &&
                 staging_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
@@ -161,6 +165,11 @@ void Intake::handle_pickup_coral() {
     default:
         break;
     }
+}
+
+bool Intake::is_lift_clear() {
+    ctre::phoenix6::BaseStatusSignal::RefreshAll(rotate_encoder_position);
+    return rotate_encoder_position.GetValue() > rotate_lift_clearance_position - 1.5_deg;
 }
 
 void Intake::call(bool robot_enabled, bool autonomous) {
@@ -257,7 +266,7 @@ void Intake::call(bool robot_enabled, bool autonomous) {
         rotate_target_position = (rotate_target_position < rotate_physical_stop_position)? rotate_physical_stop_position : rotate_target_position;
         
         //check if the lift wants the intake out of the way, and limit the target position as such
-        if(lift_clearance_channel.get()) {
+        if(get_outta_the_way_channel.get()) {
             rotate_target_position = (rotate_target_position < rotate_lift_clearance_position)? rotate_lift_clearance_position : rotate_target_position;
         }
 

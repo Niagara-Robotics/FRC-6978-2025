@@ -52,20 +52,21 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(3.8_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-4.0_V)
+            .WithPeakForwardVoltage(7.0_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-8.0_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(20_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(0.36_tps)
-            .WithMotionMagicAcceleration(1.8_tr_per_s_sq)
+            .WithMotionMagicCruiseVelocity(0.55_tps)
+            .WithMotionMagicAcceleration(2.0_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
-            .WithKP(100).WithKI(0).WithKD(0.1)
-            .WithKS(0.2).WithKV(2.0).WithKG(0.3)
+            .WithKP(120).WithKI(0).WithKD(0.1)
+            .WithKS(0.2).WithKV(2.7).WithKG(0.3).WithKA(0.4)
+            .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Arm_Cosine)
         );
 
     const units::angle::turn_t rotate_physical_stop_position = -0.37_tr;
@@ -75,9 +76,9 @@ private:
     const units::angle::turn_t algae_pickup_position = -0.11_tr;
     const units::angle::turn_t algae_hold_position = -0.205_tr;
 
-    const units::angle::turn_t coral_vertical_a_position = -0.05_tr;
+    const units::angle::turn_t coral_vertical_a_position = -0.04_tr;
     const units::angle::turn_t coral_horizontal_position = 0.00_tr;
-    const units::angle::turn_t coral_vertical_b_position = 0.02_tr;
+    const units::angle::turn_t coral_vertical_b_position = 0.026_tr;
 
     ctre::phoenix6::configs::SoftwareLimitSwitchConfigs rotate_softlimit_config = ctre::phoenix6::configs::SoftwareLimitSwitchConfigs()
         .WithForwardSoftLimitEnable(true)
@@ -107,8 +108,8 @@ private:
     const units::volt_t vertical_algae_eject_voltage = -6.0_V;
     const units::volt_t horizontal_algae_pickup_voltage = 3.0_V;
 
-    const units::volt_t vertical_coral_a_voltage = 4.5_V;
-    const units::volt_t vertical_coral_b_voltage = 5.7_V;
+    const units::volt_t vertical_coral_a_voltage = 6.5_V;
+    const units::volt_t vertical_coral_b_voltage = 8.7_V;
     const units::volt_t horizontal_coral_voltage = 4.0_V;
 
     ctre::phoenix6::controls::VoltageOut vertical_control = ctre::phoenix6::controls::VoltageOut(0_V);
@@ -129,7 +130,7 @@ private:
     //in mm
     const uint16_t algae_lock_threshold = 100;
     const uint16_t coral_horizontal_threshold = 205;
-    const uint16_t coral_a_threshold = 275;
+    const uint16_t coral_a_threshold = 295;
     const uint16_t coral_hold_threshold = 120;
 
     //
@@ -139,6 +140,8 @@ private:
     units::angle::turn_t rotate_target_position = rotate_physical_stop_position;
 
     IntakeState state = IntakeState::standby;
+
+    std::chrono::time_point<std::chrono::steady_clock> coral_horizontal_start;
 
     FaultManager fault_manager = FaultManager("intake");
 
@@ -154,12 +157,14 @@ public:
     Intake(/* args */);
     ~Intake();
 
-    controlchannel::ControlChannel<bool> lift_clearance_channel = controlchannel::ControlChannel<bool>(false);
+    controlchannel::ControlChannel<bool> get_outta_the_way_channel = controlchannel::ControlChannel<bool>(false);
     controlchannel::ControlChannel<IntakeAction> intake_action_channel = controlchannel::ControlChannel<IntakeAction>(IntakeAction::standby);
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
     void call(bool robot_enabled, bool autonomous) override;
     bool is_paused() override;
+
+    bool is_lift_clear();
 
     bool is_clear_lift();
 };
