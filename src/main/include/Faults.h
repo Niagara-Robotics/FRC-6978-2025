@@ -2,10 +2,6 @@
 
 enum class FaultIdentifier {
 // note handler
-    lowerRightLauncherUnreachable = 201,
-    lowerLeftLauncherUnreachable = 202,
-    indexerUnreachable = 210,
-    intakeUnreachable = 211,
 
 // intake
     intakeRotateUnreachable = 300,
@@ -16,4 +12,7 @@ enum class FaultIdentifier {
 
     driverTakeoverFailed = 1000,
     driverControllerUnreachable = 1001,
+
+// lift
+    liftIntakeCollisionLock = 100
 };

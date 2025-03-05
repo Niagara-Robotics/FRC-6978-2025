@@ -10,11 +10,33 @@
 #include "ControlChannel.h"
 
 #include "Intake.h"
+#include "FaultManager.h"
 
 enum class LiftMechanismState {
     park,
     pick,
-    place
+    place, 
+    flippped_park,
+    mid
+};
+
+enum class LiftDetailedState {
+    tower,
+    prep_tower,
+    prep_pick,
+    pick,
+    prep_place,
+    park,
+    flipped_park,
+    prep_flipped_park,
+    mid
+};
+
+enum class ShoulderCalibrationState {
+    uncalibrated,
+    calibrating,
+    calibrated,
+    failed
 };
 
 class Lift : public Task
@@ -32,16 +54,16 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(1.0_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-1.0_V)
+            .WithPeakForwardVoltage(4.0_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-4.0_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(20_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(0.30_tps)
-            .WithMotionMagicAcceleration(1.8_tr_per_s_sq)
+            .WithMotionMagicCruiseVelocity(0.85_tps)
+            .WithMotionMagicAcceleration(2.0_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
             .WithKP(35).WithKI(0).WithKD(0.1)
@@ -49,11 +71,19 @@ private:
             .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Elevator_Static)
         );
 
-    const units::angle::turn_t max_lift_position = 3.0_tr;
+    const units::angle::turn_t max_lift_position = 5.0_tr;
     const units::angle::turn_t lift_park_position = 0.1_tr;
 
-    const units::angle::turn_t lift_min_bay_position = 1.5_tr; //minimum position if the claw is in the bay
-    const units::angle::turn_t lift_min_bay_traverse_position = 2.0_tr; //minimum position if the claw is 
+    const units::angle::turn_t lift_min_bay_position = 1.3_tr; //minimum position if the claw is in the bay
+    const units::angle::turn_t lift_min_bay_traverse_position = 1.35_tr; //minimum position if the claw is 
+
+    const units::angle::turn_t lift_intake_liftonly_clearance = 1.15_tr;
+    const units::angle::turn_t lift_intake_bay_clearance = 0.45_tr;
+
+    const units::angle::turn_t lift_tower_position = 3.2_tr;
+    const units::angle::turn_t lift_tower_bayopen_position = 2.9_tr;
+    const units::angle::turn_t lift_pick_position = 1.421_tr;
+    const units::angle::turn_t lift_flipped_park_position = 3.0_tr;
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> lift_position = lift_motor.GetPosition();
 
@@ -70,15 +100,15 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(1.0_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-2.0_V)
+            .WithPeakForwardVoltage(0.8_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-0.8_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(12_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(0.35_tps)
+            .WithMotionMagicCruiseVelocity(0.20_tps)
             .WithMotionMagicAcceleration(1.8_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
@@ -88,13 +118,21 @@ private:
         );
 
     const units::angle::turn_t shoulder_park_position = 0_tr;
-    const units::angle::turn_t shoulder_clear_position = 0.1_tr;
-    const units::angle::turn_t shoulder_bay_exit_limit = 0.48_tr; //when the claw is in the bay
-    const units::angle::turn_t shoulder_bay_enter_limit = 0.35_tr; //when the claw is NOT in the bay
+    const units::angle::turn_t shoulder_max_position = 0.5_tr;
+
+    const units::angle::turn_t shoulder_clear_position = 0.050_tr;
+    const units::angle::turn_t shoulder_bay_exit_limit = 0.49_tr; //when the claw is in the bay
+    const units::angle::turn_t shoulder_bay_enter_limit = 0.30_tr; //when the claw is NOT in the bay
+
+    const units::angle::turn_t shoulder_intake_liftonly_clearance = 0.06_tr;
+
+    const units::angle::turn_t shoulder_level_position = 0.25_tr;
+
+    const units::angle::turn_t shoulder_pick_position = 0.48_tr;
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> shoulder_motor_position = shoulder_motor.GetPosition();
 
-    ctre::phoenix6::controls::MotionMagicVoltage shoulder_control = ctre::phoenix6::controls::MotionMagicVoltage(-0.25_tr);
+    ctre::phoenix6::controls::MotionMagicVoltage shoulder_control = ctre::phoenix6::controls::MotionMagicVoltage(shoulder_park_position);
 
     ctre::phoenix6::hardware::CANcoder shoulder_encoder = ctre::phoenix6::hardware::CANcoder(20, "rio");
 
@@ -105,22 +143,84 @@ private:
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> shoulder_encoder_position = shoulder_motor.GetPosition();
 
+    ctre::phoenix6::hardware::TalonFX twist_motor = ctre::phoenix6::hardware::TalonFX(21, "rio");
+
+    ctre::phoenix6::configs::TalonFXConfiguration twist_config = ctre::phoenix6::configs::TalonFXConfiguration()
+        .WithFeedback(ctre::phoenix6::configs::FeedbackConfigs()
+            .WithSensorToMechanismRatio(10)
+        )
+        .WithMotorOutput(ctre::phoenix6::configs::MotorOutputConfigs()
+            .WithInverted(ctre::phoenix6::signals::InvertedValue::Clockwise_Positive)
+            .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
+        )
+        .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
+            .WithPeakForwardVoltage(1.2_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-1.2_V)
+        )
+        .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
+            .WithStatorCurrentLimit(12_A)
+            .WithStatorCurrentLimitEnable(true)
+        )
+        .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
+            .WithMotionMagicCruiseVelocity(0.50_tps)
+            .WithMotionMagicAcceleration(1.8_tr_per_s_sq)
+        )
+        .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
+            .WithKP(24).WithKI(0).WithKD(0.1)
+            .WithKS(0.1).WithKV(0.5).WithKG(0.0).WithKA(0.1)
+        );
+
+    ctre::phoenix6::hardware::TalonFX gripper_motor = ctre::phoenix6::hardware::TalonFX(22, "rio");
+
+    ctre::phoenix6::configs::TalonFXConfiguration gripper_config = ctre::phoenix6::configs::TalonFXConfiguration()
+        .WithMotorOutput(ctre::phoenix6::configs::MotorOutputConfigs()
+            .WithInverted(ctre::phoenix6::signals::InvertedValue::Clockwise_Positive)
+            .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
+        )
+        .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
+            .WithPeakForwardVoltage(10_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-10_V)
+        )
+        .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
+            .WithStatorCurrentLimit(16.5_A)
+            .WithStatorCurrentLimitEnable(true)
+        );
+
+    ctre::phoenix6::controls::VoltageOut gripper_control = ctre::phoenix6::controls::VoltageOut(0.0_V);
+
     //state
-    units::angle::turn_t target_shoulder_position;
+    ShoulderCalibrationState rotate_calibration_state = ShoulderCalibrationState::uncalibrated; //and synced
+    std::chrono::time_point<std::chrono::steady_clock> rotate_calibration_start;
+
+    units::angle::turn_t target_shoulder_position = shoulder_park_position;
     units::angle::turn_t target_lift_position = lift_park_position;
+    units::angle::turn_t target_twist_position = 0_tr;
 
     LiftMechanismState current_mechanism_state = LiftMechanismState::park;
-    LiftMechanismState target_mechanism_state = LiftMechanismState::park;
+    LiftDetailedState detailed_state = LiftDetailedState::park;
 
-    controlchannel::ControlHandle<bool> get_out_handle;
+    bool lift_locked;
+    units::angle::turn_t lift_lock_position = lift_park_position;
+
+    controlchannel::ControlHandle<intake::IntakeClearanceLevel> get_out_handle;
     intake::Intake *intake;
+
+    FaultManager fault_manager = FaultManager("lift");
 
     units::angle::turn_t filter_lift_position(units::angle::turn_t input);
     units::angle::turn_t filter_shoulder_position(units::angle::turn_t input);
 
+    void handle_pick();
+    void handle_place();
+    void handle_park();
+    void handle_mid();
+    void handle_flipped_park();
+
 public:
 
     Lift(intake::Intake *intake);
+
+    controlchannel::ControlChannel<LiftMechanismState> target_mechanism_state = controlchannel::ControlChannel<LiftMechanismState>(LiftMechanismState::park);
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
     void call(bool robot_enabled, bool autonomous) override;

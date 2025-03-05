@@ -78,6 +78,7 @@ private:
     const units::angle::turn_t rotate_physical_stop_position = -0.37_tr;
     const units::angle::turn_t rotate_maximum_extent = 0.027_tr;
     const units::angle::turn_t rotate_lift_clearance_position = -0.265_tr;
+    const units::angle::turn_t rotate_bay_clearance_position = -0.1_tr;
 
     const units::angle::turn_t algae_pickup_position = -0.11_tr;
     const units::angle::turn_t algae_hold_position = -0.205_tr;
@@ -111,7 +112,7 @@ private:
 
     const units::volt_t vertical_algae_pickup_voltage = 7.0_V;
     const units::volt_t vertical_algae_hold_voltage = 2.4_V;
-    const units::volt_t vertical_algae_eject_voltage = -6.0_V;
+    const units::volt_t vertical_algae_eject_voltage = -7.0_V;
     const units::volt_t horizontal_algae_pickup_voltage = 3.0_V;
 
     const units::volt_t vertical_coral_a_voltage = 6.5_V;
@@ -163,15 +164,13 @@ public:
     Intake(/* args */);
     ~Intake();
 
-    controlchannel::ControlChannel<bool> get_outta_the_way_channel = controlchannel::ControlChannel<bool>(false);
+    controlchannel::ControlChannel<IntakeClearanceLevel> get_outta_the_way_channel = controlchannel::ControlChannel<IntakeClearanceLevel>(IntakeClearanceLevel::none);
     controlchannel::ControlChannel<IntakeAction> intake_action_channel = controlchannel::ControlChannel<IntakeAction>(IntakeAction::standby);
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
     void call(bool robot_enabled, bool autonomous) override;
     bool is_paused() override;
 
-    bool is_lift_clear();
-
-    bool is_clear_lift();
+    IntakeClearanceLevel get_clearance_level();
 };
 }

@@ -40,15 +40,6 @@ Intake::Intake() {
 
 }
 
-bool Intake::is_clear_lift() {
-    if(fault_manager.get_fault(FaultIdentifier::intakeRotateUnreachable, nullptr) || 
-        fault_manager.get_fault(FaultIdentifier::intakeRotateThermalLimit, nullptr))
-        return false;
-    ctre::phoenix6::BaseStatusSignal::RefreshAll(rotate_encoder_position);
-
-    return rotate_encoder_position.GetValue() > rotate_lift_clearance_position;
-}
-
 void Intake::handle_pickup_algae() {
     switch (state)
     {
@@ -76,7 +67,7 @@ void Intake::handle_pickup_algae() {
         rotate_target_position = algae_hold_position;
         horizontal_control.Output = 0_V;
         if(intake_sensor.get_measurement().has_value())
-            if((intake_sensor.get_measurement().value().distance_mm > algae_lock_threshold + 145 &&
+            if((intake_sensor.get_measurement().value().distance_mm > algae_lock_threshold + 300 &&
                 intake_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT) ||
                 intake_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_OUT_OF_BOUNDS) {
                 state = IntakeState::standby;
@@ -167,9 +158,14 @@ void Intake::handle_pickup_coral() {
     }
 }
 
-bool Intake::is_lift_clear() {
+IntakeClearanceLevel Intake::get_clearance_level() {
     ctre::phoenix6::BaseStatusSignal::RefreshAll(rotate_encoder_position);
-    return rotate_encoder_position.GetValue() > rotate_lift_clearance_position - 1.5_deg;
+    if(rotate_encoder_position.GetValue() > rotate_bay_clearance_position - 8.5_deg)
+        return IntakeClearanceLevel::bay;
+    if(rotate_encoder_position.GetValue() > rotate_lift_clearance_position - 15.5_deg)
+        return IntakeClearanceLevel::lift_only;
+    else 
+        return IntakeClearanceLevel::none;
 }
 
 void Intake::call(bool robot_enabled, bool autonomous) {
@@ -266,8 +262,16 @@ void Intake::call(bool robot_enabled, bool autonomous) {
         rotate_target_position = (rotate_target_position < rotate_physical_stop_position)? rotate_physical_stop_position : rotate_target_position;
         
         //check if the lift wants the intake out of the way, and limit the target position as such
-        if(get_outta_the_way_channel.get()) {
+        switch (get_outta_the_way_channel.get())
+        {
+        case IntakeClearanceLevel::lift_only:
             rotate_target_position = (rotate_target_position < rotate_lift_clearance_position)? rotate_lift_clearance_position : rotate_target_position;
+            break;
+        case IntakeClearanceLevel::bay:
+            rotate_target_position = (rotate_target_position < rotate_bay_clearance_position)? rotate_bay_clearance_position : rotate_target_position;
+            break;
+        default:
+            break;
         }
 
         rotate_control.Position = rotate_target_position;
