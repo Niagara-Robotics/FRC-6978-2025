@@ -147,6 +147,7 @@ private:
     units::angle::turn_t rotate_target_position = rotate_physical_stop_position;
 
     IntakeState state = IntakeState::standby;
+    bool coral_present = false;
 
     std::chrono::time_point<std::chrono::steady_clock> coral_horizontal_start;
 
@@ -172,5 +173,6 @@ public:
     bool is_paused() override;
 
     IntakeClearanceLevel get_clearance_level();
+    bool has_coral();
 };
 }

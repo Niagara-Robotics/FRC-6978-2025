@@ -44,6 +44,11 @@ void Intake::handle_pickup_algae() {
     switch (state)
     {
     case IntakeState::standby:
+        if(has_coral()){ //imediately cancel the motion if there is a coral present
+            intake_action_channel.take_control(0, true);
+            intake_action_channel.set(0, IntakeAction::standby);
+            return;
+        }
         rotate_target_position = algae_pickup_position;
         vertical_control.Output = vertical_algae_pickup_voltage;
         horizontal_control.Output = horizontal_algae_pickup_voltage;
@@ -144,18 +149,19 @@ void Intake::handle_pickup_coral() {
         rotate_target_position = coral_vertical_b_position;
         vertical_control.Output = vertical_coral_b_voltage;
         horizontal_control.Output = horizontal_coral_voltage;
-        if(staging_sensor.get_measurement().has_value())
-            if(staging_sensor.get_measurement().value().distance_mm < coral_hold_threshold &&
-                staging_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
-                staging_sensor.get_measurement().value().ambient < 32){
-                state = IntakeState::standby;
-                intake_action_channel.take_control(0, true);
-                intake_action_channel.set(0, IntakeAction::standby);
-            }
+        if(has_coral()){
+            state = IntakeState::standby;
+            intake_action_channel.take_control(0, true);
+            intake_action_channel.set(0, IntakeAction::standby);
+        }
         break;
     default:
         break;
     }
+}
+
+bool Intake::has_coral() {
+    return coral_present;
 }
 
 IntakeClearanceLevel Intake::get_clearance_level() {
@@ -195,8 +201,12 @@ void Intake::call(bool robot_enabled, bool autonomous) {
         state=IntakeState::standby;
         break;
     }
-
     
+    if(staging_sensor.get_measurement().has_value())
+        coral_present = 
+            (staging_sensor.get_measurement().value().distance_mm < coral_hold_threshold &&
+                staging_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
+                staging_sensor.get_measurement().value().ambient < 32);
 
     //safety checks
     
