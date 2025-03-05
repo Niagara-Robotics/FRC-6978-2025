@@ -11,6 +11,7 @@
 
 #include "Intake.h"
 #include "FaultManager.h"
+#include "SwerveController.h"
 
 enum class LiftMechanismState {
     park,
@@ -26,6 +27,8 @@ enum class LiftDetailedState {
     prep_pick,
     pick,
     prep_place,
+    place,
+    eject_coral,
     park,
     flipped_park,
     prep_flipped_park,
@@ -85,6 +88,8 @@ private:
     const units::angle::turn_t lift_pick_position = 1.421_tr;
     const units::angle::turn_t lift_flipped_park_position = 3.0_tr;
 
+    const units::angle::turn_t lift_place_position = 1.25_tr;
+
     ctre::phoenix6::StatusSignal<units::angle::turn_t> lift_position = lift_motor.GetPosition();
 
     ctre::phoenix6::controls::MotionMagicVoltage lift_control = ctre::phoenix6::controls::MotionMagicVoltage(0_tr);
@@ -100,15 +105,15 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(0.8_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-0.8_V)
+            .WithPeakForwardVoltage(2.0_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-2.0_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(12_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(0.20_tps)
+            .WithMotionMagicCruiseVelocity(0.30_tps)
             .WithMotionMagicAcceleration(1.8_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
@@ -128,7 +133,8 @@ private:
 
     const units::angle::turn_t shoulder_level_position = 0.25_tr;
 
-    const units::angle::turn_t shoulder_pick_position = 0.48_tr;
+    const units::angle::turn_t shoulder_pick_position = 0.5_tr;
+    const units::angle::turn_t shoulder_place_position = 0.15_tr;
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> shoulder_motor_position = shoulder_motor.GetPosition();
 
@@ -188,6 +194,10 @@ private:
 
     ctre::phoenix6::controls::VoltageOut gripper_control = ctre::phoenix6::controls::VoltageOut(0.0_V);
 
+    grpl::LaserCan gripper_sensor = grpl::LaserCan(20);
+
+    const uint16_t gripper_coral_threshold = 55;
+
     //state
     ShoulderCalibrationState rotate_calibration_state = ShoulderCalibrationState::uncalibrated; //and synced
     std::chrono::time_point<std::chrono::steady_clock> rotate_calibration_start;
@@ -205,6 +215,8 @@ private:
     controlchannel::ControlHandle<intake::IntakeClearanceLevel> get_out_handle;
     intake::Intake *intake;
 
+    controlchannel::ControlHandle<LateralSwerveRequest> lateral_drive_handle;
+
     FaultManager fault_manager = FaultManager("lift");
 
     units::angle::turn_t filter_lift_position(units::angle::turn_t input);
@@ -218,7 +230,7 @@ private:
 
 public:
 
-    Lift(intake::Intake *intake);
+    Lift(intake::Intake *intake, controlchannel::ControlHandle<LateralSwerveRequest> lateral_drive_handle);
 
     controlchannel::ControlChannel<LiftMechanismState> target_mechanism_state = controlchannel::ControlChannel<LiftMechanismState>(LiftMechanismState::park);
 
