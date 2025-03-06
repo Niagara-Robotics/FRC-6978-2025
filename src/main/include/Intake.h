@@ -4,6 +4,9 @@
 #include "FaultManager.h"
 #include "ControlChannel.h"
 
+#include <networktables/NetworkTable.h>
+#include <networktables/NetworkTableInstance.h>
+
 #include <ctre/phoenix6/CANcoder.hpp>
 #include <ctre/phoenix6/TalonFX.hpp>
 
@@ -133,6 +136,7 @@ private:
 
     grpl::LaserCan intake_sensor = grpl::LaserCan(30);
     grpl::LaserCan staging_sensor = grpl::LaserCan(31);
+    int last_staging_distance = -1;
 
     //in mm
     const uint16_t algae_lock_threshold = 100;
@@ -152,6 +156,8 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> coral_horizontal_start;
 
     FaultManager fault_manager = FaultManager("intake");
+
+    std::shared_ptr<nt::NetworkTable> ui_table = nt::NetworkTableInstance(nt::GetDefaultInstance()).GetTable("intake");
 
     void configure_rotate_motor();
     void enable_rotate_softlimit();

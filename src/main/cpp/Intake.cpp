@@ -202,13 +202,25 @@ void Intake::call(bool robot_enabled, bool autonomous) {
         break;
     }
     
-    if(staging_sensor.get_measurement().has_value())
+    if(staging_sensor.get_measurement().has_value()) {
         coral_present = 
             (staging_sensor.get_measurement().value().distance_mm < coral_hold_threshold &&
                 staging_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
                 staging_sensor.get_measurement().value().ambient < 32);
+        if(staging_sensor.get_measurement().value().status != grpl::LASERCAN_STATUS_VALID_MEASUREMENT) {
+            last_staging_distance = -1;
+        } else {
+            last_staging_distance = staging_sensor.get_measurement().value().distance_mm;
+        }
+    }
 
     frc::SmartDashboard::PutBoolean("bay_coral", coral_present);
+
+    ui_table.get()->PutBoolean("bay_coral/present", has_coral());
+    ui_table.get()->PutNumber("bay_coral/distance", last_staging_distance);
+    ui_table.get()->PutNumber("rotate/encoder_position", rotate_encoder_position.GetValueAsDouble());
+    ui_table.get()->PutNumber("rotate/target_position", rotate_control.Position.value());
+    ui_table.get()->PutNumber("vertical/voltage_out", vertical_control.Output.value());
 
     //safety checks
     
@@ -296,6 +308,7 @@ void Intake::call(bool robot_enabled, bool autonomous) {
     default:
         break;
     }
+    
     
     
     return;
