@@ -41,6 +41,8 @@ void Robot::StartCompetition() {
         else if(enabled && word.autonomous) {HAL_ObserveUserProgramAutonomous();}
         else {HAL_ObserveUserProgramDisabled();}
 
+        global_fault_manager->refresh();
+
         frc::SmartDashboard::UpdateValues();
         usleep(9000);
         if(should_exit) {
