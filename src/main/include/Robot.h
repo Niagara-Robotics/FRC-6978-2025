@@ -56,6 +56,10 @@ class Robot: frc::RobotBase {
     OperatorInput operator_input = OperatorInput(
         swerve_controller->planar_velocity_channel.get_handle(), 
         swerve_controller->twist_velocity_channel.get_handle(),
+        intake.intake_action_channel.get_handle(),
+        lift.target_mechanism_state.get_handle(),
+        lift.target_place_position.get_handle(),
+        global_fault_manager,
         &tracking
     );
 

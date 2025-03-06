@@ -12,6 +12,7 @@ enum class FaultIdentifier {
 
     driverTakeoverFailed = 1000,
     driverControllerUnreachable = 1001,
+    operatorControllerUnreachable = 1101,
 
 // lift
     liftIntakeCollisionLock = 100

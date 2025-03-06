@@ -17,7 +17,7 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
     double x,y,omega;
 
     if(!js.IsConnected()) {
-        fault_manager.add_fault(Fault(false, FaultIdentifier::driverControllerUnreachable));
+        fault_manager.add_fault(Fault(true, FaultIdentifier::driverControllerUnreachable));
         planar_handle.release();
         twist_handle.release();
         goto watchdog;

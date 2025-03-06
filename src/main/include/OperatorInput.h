@@ -20,19 +20,31 @@ private:
     controlchannel::ControlHandle<intake::IntakeAction> intake_handle;
 
     controlchannel::ControlHandle<LiftMechanismState> lift_handle;
+    controlchannel::ControlHandle<int> place_position_handle;
 
     Tracking *tracking;
 
     int last_pov = -1;
+
+    FaultManager fault_manager = FaultManager("OperatorInput");
 public:
     OperatorInput(
         controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
         controlchannel::ControlHandle<intake::IntakeAction> intake_handle,
         controlchannel::ControlHandle<LiftMechanismState> lift_handle,
+        controlchannel::ControlHandle<int> place_position_handle,
+        GlobalFaultManager *global_fm,
         Tracking *tracking):
-        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), intake_handle(intake_handle), lift_handle(lift_handle) {
+        planar_handle(planar_handle), 
+        twist_handle(twist_handle), 
+        tracking(tracking), 
+        intake_handle(intake_handle), 
+        lift_handle(lift_handle), 
+        place_position_handle(place_position_handle)
+        {
             frc::SmartDashboard::PutNumber("launcher_test_angle", 0.7);
+            global_fm->register_manager(&fault_manager);
         }
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
