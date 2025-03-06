@@ -95,6 +95,10 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         lift_handle.try_take_control();
         lift_handle.set(LiftMechanismState::mid);
     }
+    if(js.GetRawButton(8)) {
+        lift_handle.try_take_control();
+        lift_handle.set(LiftMechanismState::place);
+    }
     if(js.GetRawButton(7)) {
         lift_handle.try_take_control();
         lift_handle.set(LiftMechanismState::pick);

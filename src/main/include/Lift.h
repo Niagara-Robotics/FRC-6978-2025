@@ -57,20 +57,20 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(4.0_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-4.0_V)
+            .WithPeakForwardVoltage(9.5_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-9.5_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(20_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(0.85_tps)
-            .WithMotionMagicAcceleration(2.0_tr_per_s_sq)
+            .WithMotionMagicCruiseVelocity(1.45_tps)
+            .WithMotionMagicAcceleration(2.5_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
-            .WithKP(35).WithKI(0).WithKD(0.1)
-            .WithKS(0.2).WithKV(4.0).WithKG(0.25)
+            .WithKP(45).WithKI(0).WithKD(0.1)
+            .WithKS(0.2).WithKV(4.2).WithKG(0.25).WithKA(0.2)
             .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Elevator_Static)
         );
 
@@ -85,10 +85,17 @@ private:
 
     const units::angle::turn_t lift_tower_position = 3.2_tr;
     const units::angle::turn_t lift_tower_bayopen_position = 2.9_tr;
-    const units::angle::turn_t lift_pick_position = 1.421_tr;
+    const units::angle::turn_t lift_pick_position = 1.415_tr;
     const units::angle::turn_t lift_flipped_park_position = 3.0_tr;
 
-    const units::angle::turn_t lift_place_position = 1.25_tr;
+    const units::angle::turn_t lift_place_position = 2.05_tr;
+
+    const units::angle::turn_t lift_place_positions[4] = {
+        2.05_tr,
+        2.05_tr,
+        2.05_tr,
+        3.8_tr,
+    };
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> lift_position = lift_motor.GetPosition();
 
@@ -105,15 +112,15 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(2.0_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-2.0_V)
+            .WithPeakForwardVoltage(5.5_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-5.5_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(12_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(0.30_tps)
+            .WithMotionMagicCruiseVelocity(0.50_tps)
             .WithMotionMagicAcceleration(1.8_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
@@ -160,20 +167,20 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(1.2_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-1.2_V)
+            .WithPeakForwardVoltage(3.2_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-3.2_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(12_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(0.50_tps)
-            .WithMotionMagicAcceleration(1.8_tr_per_s_sq)
+            .WithMotionMagicCruiseVelocity(0.80_tps)
+            .WithMotionMagicAcceleration(2.0_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
-            .WithKP(24).WithKI(0).WithKD(0.1)
-            .WithKS(0.1).WithKV(0.5).WithKG(0.0).WithKA(0.1)
+            .WithKP(80).WithKI(0).WithKD(0.1)
+            .WithKS(0.1).WithKV(0.6).WithKG(0.0).WithKA(0.1)
         );
 
     ctre::phoenix6::hardware::TalonFX gripper_motor = ctre::phoenix6::hardware::TalonFX(22, "rio");
@@ -196,11 +203,16 @@ private:
 
     grpl::LaserCan gripper_sensor = grpl::LaserCan(20);
 
-    const uint16_t gripper_coral_threshold = 55;
+    const uint16_t gripper_coral_threshold = 35;
 
     //state
+
+    bool gripper_coral;
+
     ShoulderCalibrationState rotate_calibration_state = ShoulderCalibrationState::uncalibrated; //and synced
     std::chrono::time_point<std::chrono::steady_clock> rotate_calibration_start;
+
+    std::chrono::time_point<std::chrono::steady_clock> eject_start;
 
     units::angle::turn_t target_shoulder_position = shoulder_park_position;
     units::angle::turn_t target_lift_position = lift_park_position;
@@ -233,6 +245,9 @@ public:
     Lift(intake::Intake *intake, controlchannel::ControlHandle<LateralSwerveRequest> lateral_drive_handle);
 
     controlchannel::ControlChannel<LiftMechanismState> target_mechanism_state = controlchannel::ControlChannel<LiftMechanismState>(LiftMechanismState::park);
+
+    controlchannel::ControlChannel<int> target_place_position = controlchannel::ControlChannel<int>(3);
+
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
     void call(bool robot_enabled, bool autonomous) override;

@@ -208,6 +208,8 @@ void Intake::call(bool robot_enabled, bool autonomous) {
                 staging_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
                 staging_sensor.get_measurement().value().ambient < 32);
 
+    frc::SmartDashboard::PutBoolean("bay_coral", coral_present);
+
     //safety checks
     
     if(!rotate_motor.IsConnected(450_ms) || !rotate_motor.IsSafetyEnabled()) {

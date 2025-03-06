@@ -42,7 +42,7 @@ class Robot: frc::RobotBase {
 
     intake::Intake intake = intake::Intake();
 
-    Lift lift = Lift(&intake);
+    Lift lift = Lift(&intake, swerve_controller->planar_velocity_channel.get_handle());
 
     DriverInput driver_input = DriverInput(
         swerve_controller->planar_velocity_channel.get_handle(), 

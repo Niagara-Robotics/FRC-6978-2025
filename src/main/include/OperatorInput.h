@@ -7,12 +7,19 @@
 #include "Tracking.h"
 #include <frc/smartdashboard/SmartDashboard.h>
 
+#include "Lift.h"
+#include "Intake.h"
+
 class OperatorInput : public Task
 {
 private:
     frc::Joystick js = frc::Joystick(1); //OPERATOR
     controlchannel::ControlHandle<LateralSwerveRequest> planar_handle;
     controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle;
+
+    controlchannel::ControlHandle<intake::IntakeAction> intake_handle;
+
+    controlchannel::ControlHandle<LiftMechanismState> lift_handle;
 
     Tracking *tracking;
 
@@ -21,8 +28,10 @@ public:
     OperatorInput(
         controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
+        controlchannel::ControlHandle<intake::IntakeAction> intake_handle,
+        controlchannel::ControlHandle<LiftMechanismState> lift_handle,
         Tracking *tracking):
-        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking) {
+        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), intake_handle(intake_handle), lift_handle(lift_handle) {
             frc::SmartDashboard::PutNumber("launcher_test_angle", 0.7);
         }
 

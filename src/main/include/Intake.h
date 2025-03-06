@@ -51,7 +51,7 @@ private:
 
     ctre::phoenix6::configs::TalonFXConfiguration rotate_config = ctre::phoenix6::configs::TalonFXConfiguration()
         .WithFeedback(ctre::phoenix6::configs::FeedbackConfigs()
-            .WithSensorToMechanismRatio(100)
+            .WithSensorToMechanismRatio(50)
         )
         .WithMotorOutput(ctre::phoenix6::configs::MotorOutputConfigs()
             .WithInverted(ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive)
@@ -71,7 +71,7 @@ private:
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
             .WithKP(120).WithKI(0).WithKD(0.1)
-            .WithKS(0.2).WithKV(2.7).WithKG(0.3).WithKA(0.4)
+            .WithKS(0.2).WithKV(1.6).WithKG(0.3).WithKA(0.4)
             .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Arm_Cosine)
         );
 
