@@ -344,6 +344,8 @@ void Lift::call(bool robot_enabled, bool autonomous) {
 
     frc::SmartDashboard::PutNumber("lift_detailed_state", (int)detailed_state);
 
+    frc::SmartDashboard::PutNumber("coral_place_level", target_place_position.get());
+
     switch (target_mechanism_state.get())
     {
     case LiftMechanismState::park:
@@ -431,6 +433,11 @@ void Lift::call(bool robot_enabled, bool autonomous) {
         break;
     }
 
+    ui_table.get()->PutNumber("shoulder/calibration_state", (int)rotate_calibration_state);
+    ui_table.get()->PutNumber("shoulder/target_position", shoulder_control.Position.value());
+    ui_table.get()->PutNumber("shoulder/encoder_position", shoulder_encoder_position.GetValueAsDouble());
+    ui_table.get()->PutNumber("lift/position", lift_position.GetValueAsDouble());
+    ui_table.get()->PutNumber("lift/target_position", lift_control.Position.value());
     
 }
 

@@ -5,6 +5,8 @@
 #include <ctre/phoenix6/CANcoder.hpp>
 #include <ctre/phoenix6/TalonFX.hpp>
 
+#include <networktables/NetworkTable.h>
+
 #include <grpl/LaserCan.h>
 
 #include "ControlChannel.h"
@@ -230,6 +232,8 @@ private:
     controlchannel::ControlHandle<LateralSwerveRequest> lateral_drive_handle;
 
     FaultManager fault_manager = FaultManager("lift");
+
+    std::shared_ptr<nt::NetworkTable> ui_table = nt::NetworkTableInstance(nt::GetDefaultInstance()).GetTable("lift");
 
     units::angle::turn_t filter_lift_position(units::angle::turn_t input);
     units::angle::turn_t filter_shoulder_position(units::angle::turn_t input);
