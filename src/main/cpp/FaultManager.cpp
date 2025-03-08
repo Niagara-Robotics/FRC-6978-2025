@@ -36,6 +36,7 @@ void FaultManager::feed_watchdog() {
 }
 
 bool FaultManager::get_status() {
+    subsystem_status = true;
     for(Fault fault : faults) {
         if(fault.affect_subsystem) {
             subsystem_status = false;

@@ -23,6 +23,11 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         fault_manager.clear_fault(Fault(true, FaultIdentifier::controllerUnreachable));
     }
 
+    if(js.GetButtonCount() < 10 || js.GetAxisCount() < 3)
+        fault_manager.add_fault(Fault(true, FaultIdentifier::incorrectController));
+    else 
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::incorrectController));
+
     if(!robot_enabled || autonomous) goto watchdog;
 
     x = -js.GetRawAxis(1); //joystick y is robot x

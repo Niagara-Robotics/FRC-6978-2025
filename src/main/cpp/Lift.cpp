@@ -3,7 +3,9 @@
 #include <frc/smartdashboard/SmartDashboard.h>
 #include "string.h"
 
-Lift::Lift(intake::Intake *intake,controlchannel::ControlHandle<LateralSwerveRequest> lateral_drive_handle): intake(intake),get_out_handle(intake->get_outta_the_way_channel.get_handle()),lateral_drive_handle(lateral_drive_handle) {
+Lift::Lift(intake::Intake *intake,controlchannel::ControlHandle<LateralSwerveRequest> lateral_drive_handle, GlobalFaultManager *global_fm): intake(intake),get_out_handle(intake->get_outta_the_way_channel.get_handle()),lateral_drive_handle(lateral_drive_handle) {
+    global_fm->register_manager(&fault_manager);
+    
     lift_motor.GetConfigurator().Apply(lift_config);
     shoulder_motor.GetConfigurator().Apply(shoulder_config);
     shoulder_encoder.GetConfigurator().Apply(shoulder_encoder_configuration);
@@ -416,6 +418,22 @@ void Lift::call(bool robot_enabled, bool autonomous) {
         break;
     }
 
+    if(!shoulder_motor.IsConnected())
+        fault_manager.add_fault(Fault(true, FaultIdentifier::shoulderUnreachable));
+    else 
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::shoulderUnreachable));
+    
+    if(!lift_motor.IsConnected())
+        fault_manager.add_fault(Fault(true, FaultIdentifier::liftUnreachable));
+    else 
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::liftUnreachable));
+
+    if(!twist_motor.IsConnected())
+        fault_manager.add_fault(Fault(true, FaultIdentifier::twistUnreachable));
+    else 
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::twistUnreachable));
+
+
     //decide whether we want the intake out of the way
     //shoulder is out beyond the intake clearance and lift is below the intake(or the mechanism wants to pick)
     if((target_shoulder_position > shoulder_intake_liftonly_clearance && 
@@ -489,6 +507,7 @@ void Lift::call(bool robot_enabled, bool autonomous) {
     ui_table.get()->PutNumber("lift/position", lift_position.GetValueAsDouble());
     ui_table.get()->PutNumber("lift/target_position", lift_control.Position.value());
     
+    fault_manager.feed_watchdog();
 }
 
 bool Lift::is_paused() {

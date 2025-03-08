@@ -12,11 +12,16 @@ enum class FaultIdentifier {
 
     drivebaseTakeoverFailed = 1000,
     controllerUnreachable = 1001,
+    incorrectController = 1002,
 
 // lift
-    liftIntakeCollisionLock = 100,
+    liftIntakeCollisionLock = 200,
+    liftUnreachable = 201,
+    shoulderUnreachable = 202,
+    twistUnreachable = 203,
+    gripperUnreachable = 204,
 
-    driveMotorUnreachable = 400,
-    steerMotorUnreachable = 401,
-    steerEncoderUnreachable = 402,
+    driveMotorUnreachable = 100,
+    steerMotorUnreachable = 101,
+    steerEncoderUnreachable = 102,
 };

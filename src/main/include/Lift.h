@@ -259,7 +259,7 @@ private:
 
 public:
 
-    Lift(intake::Intake *intake, controlchannel::ControlHandle<LateralSwerveRequest> lateral_drive_handle);
+    Lift(intake::Intake *intake, controlchannel::ControlHandle<LateralSwerveRequest> lateral_drive_handle, GlobalFaultManager *global_fm);
 
     controlchannel::ControlChannel<LiftMechanismState> target_mechanism_state = controlchannel::ControlChannel<LiftMechanismState>(LiftMechanismState::park);
 
