@@ -15,5 +15,9 @@ enum class FaultIdentifier {
     operatorControllerUnreachable = 1101,
 
 // lift
-    liftIntakeCollisionLock = 100
+    liftIntakeCollisionLock = 100,
+
+    driveMotorUnreachable = 400,
+    steerMotorUnreachable = 401,
+    steerEncdoerUnreachable = 402,
 };

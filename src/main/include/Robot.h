@@ -36,7 +36,7 @@ class Robot: frc::RobotBase {
     Scheduler *tracking_scheduler = new Scheduler("tracking");
     Scheduler *input_scheduler = new Scheduler("input");
 
-    SwerveController *swerve_controller = new SwerveController();
+    SwerveController *swerve_controller = new SwerveController(global_fault_manager);
 
     Tracking tracking = Tracking(swerve_controller);
 

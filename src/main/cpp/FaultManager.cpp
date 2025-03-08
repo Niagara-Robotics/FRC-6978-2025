@@ -44,6 +44,14 @@ bool FaultManager::get_status() {
     return subsystem_status;
 }
 
+std::string FaultManager::get_faults() {
+    std::string output = "";
+    for(Fault fault : faults) {
+        output.append(std::to_string((int)fault.fault) + ",");
+    }
+    return output;
+}
+
 bool FaultManager::check_watchdog() {
     return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - last_watchdog_checkin) < std::chrono::seconds(FAULTMANAGER_WATCHDOG_TIMEOUT);
 }

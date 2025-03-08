@@ -20,6 +20,7 @@ enum class LiftMechanismState {
     pick,
     place, 
     flippped_park,
+    algae,
     mid
 };
 
@@ -29,6 +30,8 @@ enum class LiftDetailedState {
     prep_pick,
     pick,
     prep_place,
+    prep_algae,
+    algae,
     place,
     eject_coral,
     park,
@@ -59,20 +62,20 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(9.5_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-9.5_V)
+            .WithPeakForwardVoltage(11.5_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-11.5_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(20_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(1.45_tps)
-            .WithMotionMagicAcceleration(2.5_tr_per_s_sq)
+            .WithMotionMagicCruiseVelocity(1.85_tps)
+            .WithMotionMagicAcceleration(5_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
             .WithKP(45).WithKI(0).WithKD(0.1)
-            .WithKS(0.2).WithKV(4.2).WithKG(0.25).WithKA(0.2)
+            .WithKS(0.2).WithKV(4.6).WithKG(0.25).WithKA(0.35)
             .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Elevator_Static)
         );
 
@@ -87,16 +90,24 @@ private:
 
     const units::angle::turn_t lift_tower_position = 3.2_tr;
     const units::angle::turn_t lift_tower_bayopen_position = 2.9_tr;
-    const units::angle::turn_t lift_pick_position = 1.415_tr;
+    const units::angle::turn_t lift_pick_position = 1.405_tr;
     const units::angle::turn_t lift_flipped_park_position = 3.0_tr;
 
     const units::angle::turn_t lift_place_position = 2.05_tr;
+    const units::angle::turn_t lift_algae_position = 3.15_tr;
 
     const units::angle::turn_t lift_place_positions[4] = {
         2.05_tr,
         2.05_tr,
         2.05_tr,
-        3.8_tr,
+        3.75_tr,
+    };
+
+    const units::angle::turn_t lift_algae_positions[4] = {
+        1.99_tr,
+        1.99_tr,
+        3.15_tr,
+        3.15_tr,
     };
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> lift_position = lift_motor.GetPosition();
@@ -144,6 +155,7 @@ private:
 
     const units::angle::turn_t shoulder_pick_position = 0.5_tr;
     const units::angle::turn_t shoulder_place_position = 0.15_tr;
+    const units::angle::turn_t shoulder_algae_position = 0.175_tr;
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> shoulder_motor_position = shoulder_motor.GetPosition();
 
@@ -243,6 +255,7 @@ private:
     void handle_park();
     void handle_mid();
     void handle_flipped_park();
+    void handle_algae();
 
 public:
 

@@ -16,25 +16,25 @@
 
 using namespace pathplanner;
 
-AutoPilot::AutoPilot(controlchannel::ControlHandle<PlanarSwerveRequest> planar_handle, 
+AutoPilot::AutoPilot(controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
-        controlchannel::ControlHandle<IntakeIndexingMode> index_mode_handle,
-        controlchannel::ControlHandle<LauncherMode> launcher_mode_handle,
-        controlchannel::ControlHandle<units::angle::radian_t> launcher_tilt_handle,
-        controlchannel::ControlHandle<AutoShotMode> auto_shot_mode_handle,
-        Tracking *tracking, NoteHandler *note_handler):
-        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), index_mode_handle(index_mode_handle),
-        launcher_mode_handle(launcher_mode_handle), launcher_tilt_handle(launcher_tilt_handle), note_handler(note_handler), auto_shot_mode_handle(auto_shot_mode_handle)
-{
-    AutoBuilder::configureHolonomic(
+        Tracking *tracking,
+        SwerveController *swerve_controller):
+        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), swerve_controller(swerve_controller)
+{   
+
+    /*AutoBuilder::configure(
         [this, tracking](){ return tracking->get_pose(); }, // Robot pose supplier
         [this, tracking](frc::Pose2d pose){ tracking->reset_pose(pose); }, // Method to reset odometry (will be called if your auto has a starting pose)
         [this, tracking](){ return tracking->get_chassis_speeds(); }, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
         [this, twist_handle, planar_handle](auto speeds){ drive_robot_relative(speeds); }, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
-        HolonomicPathFollowerConfig( // PPHolonomicController is the built in path following controller for holonomic drive trains
+        pathplanner::PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
             PIDConstants(2.5, 0.0, 0.0), // Translation PID constants
-            PIDConstants(2.0, 0.0, 0.0), 5.0_mps, 0.438_m, ReplanningConfig(), 0.004_s // Rotation PID constants
+            PIDConstants(2.0, 0.0, 0.0), 0.004_s // Rotation PID constants
         ),
+        RobotConfig(52_kg, 10_kg_sq_m,
+			ModuleConfig(4_in, 5_mps, 1.0, frc::DCMotor(12_V, 4.6_nm, 260_A, 1.5_A, 100_tps, 1), 40_A,1), 
+            swerve_controller->fetch_module_offsets()),
         []() {
             // Boolean supplier that controls when the path will be mirrored for the red alliance
             // This will flip the path being followed to the red side of the field.
@@ -47,39 +47,7 @@ AutoPilot::AutoPilot(controlchannel::ControlHandle<PlanarSwerveRequest> planar_h
             return false;
         },
         this // Reference to this subsystem to set requirements
-    );
-
-    NamedCommands::registerCommand("close_shot", std::move(frc2::FunctionalCommand(
-        [this]() { close_shot_init(); },
-        [this]() { close_shot_exec(); },
-        [this](bool interrupted) { close_shot_kill(interrupted); },
-        [this]() { return close_shot_complete(); }
-    ).ToPtr()));
-
-    NamedCommands::registerCommand("pickup", std::move(frc2::FunctionalCommand(
-        [this]() { pickup_init(); },
-        [this]() { pickup_exec(); },
-        [this](bool interrupted) { pickup_kill(interrupted); },
-        [this]() { return pickup_complete(); }
-    ).ToPtr()));
-
-    NamedCommands::registerCommand("auto_shot", std::move(frc2::FunctionalCommand(
-        [this]() { auto_shot_init(); },
-        [this]() { auto_shot_exec(); },
-        [this](bool interrupted) { auto_shot_kill(interrupted); },
-        [this]() { return auto_shot_complete(); }
-    ).ToPtr()));
-
-    centre_auto = AutoBuilder::buildAuto("centre");
-    exit_auto = AutoBuilder::buildAuto("Far Exit");
-    exit_auto = AutoBuilder::buildAuto("right exit");
-
-    auto_chooser.SetDefaultOption("centre", &centre_auto);
-    auto_chooser.SetDefaultOption("left exit", &exit_auto);
-    auto_chooser.SetDefaultOption("right exit", &right_exit_auto);
-    auto_chooser.SetDefaultOption("none", nullptr);
-    frc::SmartDashboard::PutData("auto", &auto_chooser);
-    
+    );*/
 }
 
 void AutoPilot::drive_robot_relative(frc::ChassisSpeeds speeds) {
@@ -90,7 +58,7 @@ void AutoPilot::drive_robot_relative(frc::ChassisSpeeds speeds) {
     twist_mode_channel.set(0, AutoPilotTwistMode::planner);
 
     twist_handle.set(speeds.omega);
-    planar_handle.set(PlanarSwerveRequest(speeds.vx, speeds.vy, true));
+    planar_handle.set(LateralSwerveRequest(speeds.vx, speeds.vy, SwerveRequestType::full));
 }
 
 units::angular_velocity::radians_per_second_t AutoPilot::heading_proportional(units::angle::radian_t target, units::angle::radian_t current) {
@@ -125,16 +93,6 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
         twist_handle.set(heading_proportional(target * 1.0_rad, tracking->get_pose().Rotation().Radians()));
         break;
     }
-
-    case AutoPilotTwistMode::speaker: {
-        if(std::chrono::steady_clock::now() < (tracking->get_speaker_pose().observation_time + std::chrono::milliseconds(250))) {
-            twist_handle.try_take_control();
-            twist_handle.set(heading_proportional(0.0_rad, tracking->get_speaker_pose().heading));
-        } else {
-            twist_handle.set(0_rad_per_s);
-        }
-        break;
-    }
     
     case AutoPilotTwistMode::none:
         twist_handle.set(0_rad_per_s);
@@ -149,29 +107,11 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
         return;
     }
     if(autonomous) {
-        frc::SmartDashboard::PutBoolean("null_auto", false);
-        if(!auto_initialized) {
-            if(auto_chooser.GetSelected() == nullptr) {
-                frc::SmartDashboard::PutBoolean("null_auto", true);
-                return;
-            }
-            current_auto_command = auto_chooser.GetSelected()->get();
-            current_auto_command->Schedule();
-            current_auto_command->Initialize();
-            current_auto_command->Execute();
-            auto_initialized = true;
-            auto_running = true;
-            return;
-        }
-        if(current_auto_command->IsFinished()) return;
-        current_auto_command->Execute();
+        if(!auto_running)
         return;
     }
     if(auto_running) {
-        current_auto_command->End(true);
-        twist_mode_channel.set(0, AutoPilotTwistMode::none);
-        twist_mode_channel.take_control(0, true); //allow others to grab the handle
-        planar_handle.set(PlanarSwerveRequest(0_mps,0_mps));
+        
         auto_running = false;
     }
 }

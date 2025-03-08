@@ -187,10 +187,11 @@ public:
     void set_chassis_rotation(frc::Rotation2d rotation);
 
     wpi::array<frc::SwerveModulePosition, 4> fetch_module_positions();
+    std::vector<frc::Translation2d> fetch_module_offsets();
     frc::ChassisSpeeds get_chassis_speeds();
 
     frc::SwerveDriveKinematics<4> get_kinematics();
 
-    SwerveController();
+    SwerveController(GlobalFaultManager *global_fm);
     ~SwerveController();
 };

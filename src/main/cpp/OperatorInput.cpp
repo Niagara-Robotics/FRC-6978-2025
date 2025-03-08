@@ -16,9 +16,13 @@ void OperatorInput::call(bool robot_enabled, bool autonomous) {
     }
     if(js.GetRawButton(2)) {
         lift_handle.try_take_control();
-        lift_handle.set(LiftMechanismState::mid);
+        lift_handle.set(LiftMechanismState::algae);
     }
     if(js.GetRawButton(5)) {
+        lift_handle.try_take_control();
+        lift_handle.set(LiftMechanismState::mid);
+    }
+    if(js.GetRawButton(4)) {
         lift_handle.try_take_control();
         lift_handle.set(LiftMechanismState::pick);
     }

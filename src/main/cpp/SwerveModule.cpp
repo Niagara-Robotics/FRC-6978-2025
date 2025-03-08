@@ -8,7 +8,7 @@ using namespace ctre::phoenix6;
 
 //NOTE: this is specifically optimized for coax swerve devices! set config.couple_ratio to 0 to disable coax behavior
 
-SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id)
+SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id): fault_manager(id)
 {   
     this->state = SMC_STATE_INITIALIZING;
 

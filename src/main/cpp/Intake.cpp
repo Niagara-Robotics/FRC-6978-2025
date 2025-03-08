@@ -142,7 +142,7 @@ void Intake::handle_pickup_coral() {
             if(intake_sensor.get_measurement().value().distance_mm < coral_horizontal_threshold &&
                 intake_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
                 intake_sensor.get_measurement().value().ambient < 32 && 
-                std::chrono::steady_clock::now() - coral_horizontal_start > std::chrono::milliseconds(900))
+                std::chrono::steady_clock::now() - coral_horizontal_start > std::chrono::milliseconds(600))
                 state = IntakeState::coral_vertical_b;
         break;
     case IntakeState::coral_vertical_b:

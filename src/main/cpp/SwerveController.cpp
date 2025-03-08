@@ -9,9 +9,12 @@
 #include <sched.h>
 #include "ControlChannel.h"
 
-SwerveController::SwerveController()
+SwerveController::SwerveController(GlobalFaultManager *global_fm)
 {
     module_positions_publisher = nt::StructArrayTopic<frc::SwerveModulePosition>(nt::GetTopic(nt::GetDefaultInstance(), "swerve/module_positions")).Publish();
+    for (size_t i = 0; i < 4; i++) {
+        global_fm->register_manager(&modules[i]->fault_manager);
+    }
     return;
 }
 
@@ -106,6 +109,14 @@ frc::ChassisSpeeds SwerveController::get_chassis_speeds() {
         states[i] = modules[i]->get_module_state();
     }
     return kinematics.ToChassisSpeeds(states);
+}
+
+std::vector<frc::Translation2d> SwerveController::fetch_module_offsets() {
+    std::vector<frc::Translation2d> positions = std::vector<frc::Translation2d>();
+    for (size_t i = 0; i < 4; i++) {
+        positions.push_back(module_positions[i]);
+    }
+    return positions;
 }
 
 bool SwerveController::is_paused() {

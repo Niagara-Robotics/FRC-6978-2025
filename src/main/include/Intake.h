@@ -74,7 +74,7 @@ private:
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
             .WithKP(120).WithKI(0).WithKD(0.1)
-            .WithKS(0.2).WithKV(1.6).WithKG(0.3).WithKA(0.4)
+            .WithKS(0.2).WithKV(1.6).WithKG(0.3).WithKA(0.3)
             .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Arm_Cosine)
         );
 
@@ -86,7 +86,7 @@ private:
     const units::angle::turn_t algae_pickup_position = -0.11_tr;
     const units::angle::turn_t algae_hold_position = -0.205_tr;
 
-    const units::angle::turn_t coral_vertical_a_position = -0.04_tr;
+    const units::angle::turn_t coral_vertical_a_position = -0.042_tr;
     const units::angle::turn_t coral_horizontal_position = 0.00_tr;
     const units::angle::turn_t coral_vertical_b_position = 0.026_tr;
 

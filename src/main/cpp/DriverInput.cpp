@@ -3,8 +3,8 @@
 #include <frc/smartdashboard/SmartDashboard.h>
 #include <frc/DriverStation.h>
 
-#define DEAD_ZONE 0.15
-#define xyMultiplier 2.5_mps
+#define DEAD_ZONE 0.07
+#define xyMultiplier 3.0_mps
 #define wMultiplier 4.5_rad_per_s
 
 #define BUTTON_TAKE_CONTROL 2
@@ -91,18 +91,11 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         intake_handle.set(intake::IntakeAction::pickup_coral);
     }
 
-    if(js.GetRawButton(5)) {
-        lift_handle.try_take_control();
-        lift_handle.set(LiftMechanismState::mid);
-    }
     if(js.GetRawButton(8)) {
         lift_handle.try_take_control();
         lift_handle.set(LiftMechanismState::place);
     }
-    if(js.GetRawButton(7)) {
-        lift_handle.try_take_control();
-        lift_handle.set(LiftMechanismState::pick);
-    }
+
 
     watchdog:
 

@@ -154,12 +154,12 @@ void Lift::handle_pick() {
         target_shoulder_position = 0.5_tr;
         gripper_control.Output = 0_V;
         target_twist_position = 0.25_tr;
-        if(intake->has_coral() && fabs(shoulder_encoder_position.GetValueAsDouble() - 0.5) < 0.01)
+        if(intake->has_coral() && fabs(shoulder_encoder_position.GetValueAsDouble() - 0.5) < 0.005)
             detailed_state = LiftDetailedState::pick;
         break;
     case LiftDetailedState::pick:
         target_lift_position = lift_pick_position;
-        gripper_control.Output = 3.0_V;
+        gripper_control.Output = 5.0_V;
         target_shoulder_position = 0.5_tr;
         target_twist_position = 0.25_tr;
         if(gripper_coral) {
@@ -227,7 +227,7 @@ void Lift::handle_mid() {
         break;
     case LiftDetailedState::mid:
         target_lift_position = lift_intake_liftonly_clearance + 5_deg;
-        target_shoulder_position = shoulder_intake_liftonly_clearance + 5_deg;
+        target_shoulder_position = shoulder_intake_liftonly_clearance + 0_deg;
         target_twist_position = 0.5_tr;
         gripper_control.Output = (gripper_coral)? 1_V : 0_V;
         if(target_mechanism_state.has_control(0))
@@ -276,6 +276,20 @@ void Lift::handle_mid() {
     case LiftDetailedState::eject_coral:
         lateral_drive_handle.release();
         detailed_state = LiftDetailedState::place;
+        break;
+
+    case LiftDetailedState::prep_algae:
+        detailed_state = LiftDetailedState::mid;
+        break;
+
+    case LiftDetailedState::algae:
+        target_lift_position = lift_algae_positions[target_place_position.get()];
+        target_shoulder_position = shoulder_intake_liftonly_clearance + 5_deg;
+        gripper_control.Output = 0_V;
+        target_twist_position = 0.5_tr;
+        if(fabs(shoulder_encoder_position.GetValueAsDouble() - (shoulder_intake_liftonly_clearance + 5_deg).value()) < 0.01)
+            detailed_state = LiftDetailedState::prep_algae;
+        break;
     
     default:
         break;
@@ -318,7 +332,7 @@ void Lift::handle_place() {
         target_twist_position = 0.5_tr;
         //skew backwards
         lateral_drive_handle.try_take_control();
-        lateral_drive_handle.set(LateralSwerveRequest(-0.2_mps, 0_mps, SwerveRequestType::full_robot_relative));
+        lateral_drive_handle.set(LateralSwerveRequest(-0.35_mps, 0_mps, SwerveRequestType::full_robot_relative));
         if(!gripper_coral && std::chrono::steady_clock::now() - eject_start > std::chrono::milliseconds(500)) 
         {
             target_mechanism_state.take_control(0, false);
@@ -328,6 +342,38 @@ void Lift::handle_place() {
         //check if the coral is out
         //if its out, cancel the movement
         break;
+    default:
+        break;
+    }
+}
+
+void Lift::handle_algae() {
+    switch (detailed_state)
+    {
+    case LiftDetailedState::mid:
+        detailed_state = LiftDetailedState::prep_algae;
+        target_place_position.take_control(0, false);
+        if(target_place_position.get() >= std::size(lift_place_positions))
+            target_place_position.set(0, std::size(lift_place_positions) - 1);
+        if(target_place_position.get() < 0)
+            target_place_position.set(0, 0);
+        break;
+    case LiftDetailedState::prep_algae:
+        target_lift_position = lift_algae_positions[target_place_position.get()];
+        target_shoulder_position = shoulder_intake_liftonly_clearance + 0_deg;
+        gripper_control.Output = -5_V;
+        target_twist_position = 0.25_tr;
+        if(fabs(lift_position.GetValueAsDouble() - lift_algae_positions[target_place_position.get()].value()) < 0.01)
+            detailed_state=LiftDetailedState::algae;
+        break;
+
+    case LiftDetailedState::algae:
+        target_lift_position = lift_algae_positions[target_place_position.get()];
+        target_shoulder_position = shoulder_algae_position;
+        gripper_control.Output = -5_V;
+        target_twist_position = 0.25_tr;
+        break;
+    
     default:
         break;
     }
@@ -344,7 +390,7 @@ void Lift::call(bool robot_enabled, bool autonomous) {
 
     frc::SmartDashboard::PutNumber("lift_detailed_state", (int)detailed_state);
 
-    frc::SmartDashboard::PutNumber("coral_place_level", target_place_position.get());
+    frc::SmartDashboard::PutNumber("coral_place_level", target_place_position.get() + 1);
 
     switch (target_mechanism_state.get())
     {
@@ -360,6 +406,10 @@ void Lift::call(bool robot_enabled, bool autonomous) {
 
     case LiftMechanismState::mid:
         handle_mid();
+        break;
+
+    case LiftMechanismState::algae:
+        handle_algae();
         break;
     
     default:

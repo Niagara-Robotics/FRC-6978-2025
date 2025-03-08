@@ -8,6 +8,8 @@
 #include <frc/kinematics/SwerveDriveKinematics.h>
 #include <frc/kinematics/SwerveDriveOdometry.h>
 
+#include "FaultManager.h"
+
 #include <list>
 
 class CommonSwerveModuleConfig
@@ -121,6 +123,7 @@ public:
     void apply(frc::SwerveModuleState state);
     void idle();
     void test_couple();
+    FaultManager fault_manager;
     frc::SwerveModulePosition get_position();
     frc::SwerveModuleState get_module_state();
     int get_state();
