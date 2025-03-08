@@ -107,12 +107,23 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
         return;
     }
     if(autonomous) {
-        if(!auto_running)
+        if(!auto_running && !auto_initialized) {
+            auto_running = true;
+            auto_initialized = true;
+            planar_handle.try_take_control();
+            planar_handle.set(LateralSwerveRequest(0.5_mps, 0.0_mps, SwerveRequestType::full_robot_relative));
+            auto_start = std::chrono::steady_clock::now();
+        }
+
+        if(std::chrono::steady_clock::now() - auto_start > std::chrono::milliseconds(2500) && auto_running) {
+            planar_handle.release();
+            auto_running = false;
+        }
+
         return;
-    }
-    if(auto_running) {
-        
+    } else if(auto_running) {
         auto_running = false;
+        planar_handle.release();
     }
 }
 

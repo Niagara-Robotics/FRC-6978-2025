@@ -12,6 +12,7 @@
 //#include <pathplanner/lib/auto/AutoBuilder.h>
 
 #include <iostream>
+#include <chrono>
 
 //#include <pathplanner/lib/controllers/PPHolonomicDriveController.h>
 //#include <pathplanner/lib/auto/NamedCommands.h>
@@ -48,6 +49,8 @@ private:
 
     frc::SendableChooser<frc2::CommandPtr*> auto_chooser;
     frc2::Command *current_auto_command;
+
+    std::chrono::time_point<std::chrono::steady_clock> auto_start;
 
     bool auto_initialized = false;
     bool auto_running = false;
