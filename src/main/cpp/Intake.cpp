@@ -29,8 +29,10 @@ void Intake::enable_rotate_softlimit() {
         fault_manager.add_fault(Fault(true, FaultIdentifier::intakeRotateUnreachable));
 }
 
-Intake::Intake() {
+Intake::Intake(GlobalFaultManager *global_fm) {
     configure_rotate_motor();
+
+    global_fm->register_manager(&fault_manager);
 
     if (rotate_encoder.GetConfigurator().Apply(rotate_encoder_config) != ctre::phoenix::StatusCode::OK)
         fault_manager.add_fault(Fault(true, FaultIdentifier::intakeRotateEncoderUnreachable));
@@ -265,18 +267,19 @@ void Intake::call(bool robot_enabled, bool autonomous) {
         rotate_motor.SetControl(ctre::phoenix6::controls::VoltageOut(-0.15_V));
         //fail if the calibration doesnt satisfy after 3 seconds
         if(std::chrono::steady_clock::now() - rotate_calibration_start > std::chrono::seconds(3)) {
-            fault_manager.add_fault(Fault(false, FaultIdentifier::intakeRotateCalibrationTimeout));
+            fault_manager.add_fault(Fault(true, FaultIdentifier::intakeRotateCalibrationTimeout));
             rotate_calibration_state = RotateCalibrationState::failed;
             rotate_motor.Disable();
         }
         //must be on-time, on position, and stopped
         if(std::chrono::steady_clock::now() - rotate_calibration_start > std::chrono::milliseconds(800) &&
             abs(rotate_encoder.GetVelocity().GetValueAsDouble()) < 0.08 &&
-            rotate_encoder_position.GetValue() < rotate_physical_stop_position + 8_deg) 
+            rotate_encoder_position.GetValue() < (rotate_physical_stop_position + 8_deg)) 
         {
             rotate_motor.SetPosition(rotate_encoder_position.GetValue());
             enable_rotate_softlimit();
             rotate_calibration_state = RotateCalibrationState::finished;
+            printf("Calibrated intake %f\n", rotate_encoder_position.GetValueAsDouble());
         }
         break;
     

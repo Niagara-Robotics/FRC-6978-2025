@@ -168,7 +168,7 @@ private:
     void handle_eject_algae();
 
 public:
-    Intake(/* args */);
+    Intake(GlobalFaultManager *global_fm);
     ~Intake();
 
     controlchannel::ControlChannel<IntakeClearanceLevel> get_outta_the_way_channel = controlchannel::ControlChannel<IntakeClearanceLevel>(IntakeClearanceLevel::none);

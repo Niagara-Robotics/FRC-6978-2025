@@ -40,7 +40,7 @@ class Robot: frc::RobotBase {
 
     Tracking tracking = Tracking(swerve_controller);
 
-    intake::Intake intake = intake::Intake();
+    intake::Intake intake = intake::Intake(global_fault_manager);
 
     Lift lift = Lift(&intake, swerve_controller->planar_velocity_channel.get_handle(), global_fault_manager);
 
