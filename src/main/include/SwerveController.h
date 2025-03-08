@@ -51,7 +51,7 @@ private:
 
     ctre::phoenix6::configs::Slot0Configs steer_clc_gains = ctre::phoenix6::configs::Slot0Configs()
         .WithKP(90.0).WithKI(0).WithKD(0)
-        .WithKS(0.148).WithKV(1.05).WithKA(0.005);
+        .WithKS(0.148).WithKV(1.05).WithKA(0.002);
 
     ctre::phoenix6::configs::CurrentLimitsConfigs drive_current_limits = ctre::phoenix6::configs::CurrentLimitsConfigs()
         .WithStatorCurrentLimitEnable(true)

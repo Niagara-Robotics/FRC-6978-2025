@@ -10,18 +10,20 @@
 #define BUTTON_TAKE_CONTROL 2
 
 void DriverInput::call(bool robot_enabled, bool autonomous) {
-    if(autonomous) return;
-    
     auto alliance = frc::DriverStation::GetAlliance();
 
     double x,y,omega;
 
     if(!js.IsConnected()) {
-        fault_manager.add_fault(Fault(true, FaultIdentifier::driverControllerUnreachable));
+        fault_manager.add_fault(Fault(true, FaultIdentifier::controllerUnreachable));
         planar_handle.release();
         twist_handle.release();
         goto watchdog;
+    } else {
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::controllerUnreachable));
     }
+
+    if(!robot_enabled || autonomous) goto watchdog;
 
     x = -js.GetRawAxis(1); //joystick y is robot x
     y = -js.GetRawAxis(0);
@@ -58,9 +60,9 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         //std::cout << "grabbing handles" << std::endl;
         if(!planar_handle.try_take_control() || !twist_handle.try_take_control()) {
             std::cout << "Failed to grab planar handle" << std::endl;
-            fault_manager.add_fault(Fault(false, FaultIdentifier::driverTakeoverFailed));
+            fault_manager.add_fault(Fault(false, FaultIdentifier::drivebaseTakeoverFailed));
         } else {
-            fault_manager.clear_fault(Fault(false, FaultIdentifier::driverTakeoverFailed));
+            fault_manager.clear_fault(Fault(false, FaultIdentifier::drivebaseTakeoverFailed));
         }
     }
 

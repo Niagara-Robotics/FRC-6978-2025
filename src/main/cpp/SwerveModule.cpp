@@ -91,6 +91,24 @@ void SwerveModule::apply(frc::SwerveModuleState target_state)
     this->state = SMC_STATE_NORMAL;
     std::chrono::time_point<std::chrono::steady_clock> start_time = std::chrono::steady_clock::now();
 
+    if(!drive_motor->IsConnected()) {
+        fault_manager.add_fault(Fault(true, FaultIdentifier::driveMotorUnreachable));
+    } else {
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::driveMotorUnreachable));
+    }
+
+    if(!steer_motor->IsConnected()) {
+        fault_manager.add_fault(Fault(true, FaultIdentifier::steerMotorUnreachable));
+    } else {
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::steerMotorUnreachable));
+    }
+
+    if(!steering_encoder->IsConnected()) {
+        fault_manager.add_fault(Fault(true, FaultIdentifier::steerEncoderUnreachable));
+    } else {
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::steerEncoderUnreachable));
+    }
+
     if(BaseStatusSignal::RefreshAll(*steering_position, *steering_velocity) != 0) {
         this->state = 10;
     }

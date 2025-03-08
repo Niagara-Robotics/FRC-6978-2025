@@ -72,6 +72,7 @@ void GlobalFaultManager::refresh() {
         }
         frc::SmartDashboard::PutBoolean("fm_" + manager->get_name() + "_status", manager->get_status());
         frc::SmartDashboard::PutBoolean("fm_" + manager->get_name() + "_watchdog", manager->check_watchdog());
+        frc::SmartDashboard::PutString("fm_" + manager->get_name() + "_faults", manager->get_faults());
     }
     global_status = status;
 }

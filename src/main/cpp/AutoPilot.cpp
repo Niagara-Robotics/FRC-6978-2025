@@ -1,12 +1,12 @@
 #include "AutoPilot.h"
 #include <frc/smartdashboard/SmartDashboard.h>
 
-#include <pathplanner/lib/auto/AutoBuilder.h>
+//#include <pathplanner/lib/auto/AutoBuilder.h>
 
 #include <iostream>
 
-#include <pathplanner/lib/controllers/PPHolonomicDriveController.h>
-#include <pathplanner/lib/auto/NamedCommands.h>
+//#include <pathplanner/lib/controllers/PPHolonomicDriveController.h>
+//#include <pathplanner/lib/auto/NamedCommands.h>
 #include <frc/geometry/Pose2d.h>
 #include <frc/kinematics/ChassisSpeeds.h>
 #include <frc/smartdashboard/SendableChooser.h>
@@ -14,7 +14,7 @@
 #include <networktables/NetworkTable.h>
 #include <networktables/NetworkTableInstance.h>
 
-using namespace pathplanner;
+//using namespace pathplanner;
 
 AutoPilot::AutoPilot(controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,

@@ -9,14 +9,14 @@
 #include <frc2/command/Command.h>
 
 
-#include <pathplanner/lib/auto/AutoBuilder.h>
+//#include <pathplanner/lib/auto/AutoBuilder.h>
 
 #include <iostream>
 
-#include <pathplanner/lib/controllers/PPHolonomicDriveController.h>
-#include <pathplanner/lib/auto/NamedCommands.h>
+//#include <pathplanner/lib/controllers/PPHolonomicDriveController.h>
+//#include <pathplanner/lib/auto/NamedCommands.h>
 
-using namespace pathplanner;
+//using namespace pathplanner;
 
 enum class AutoPilotTwistMode {
     none,

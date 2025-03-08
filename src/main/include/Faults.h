@@ -10,14 +10,13 @@ enum class FaultIdentifier {
     intakeRotateThermalLimit = 303,
     intakeLaserSensorFault = 304,
 
-    driverTakeoverFailed = 1000,
-    driverControllerUnreachable = 1001,
-    operatorControllerUnreachable = 1101,
+    drivebaseTakeoverFailed = 1000,
+    controllerUnreachable = 1001,
 
 // lift
     liftIntakeCollisionLock = 100,
 
     driveMotorUnreachable = 400,
     steerMotorUnreachable = 401,
-    steerEncdoerUnreachable = 402,
+    steerEncoderUnreachable = 402,
 };

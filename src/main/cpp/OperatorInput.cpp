@@ -4,11 +4,15 @@ void OperatorInput::call(bool robot_enabled, bool autonomous) {
     if(autonomous) return;
 
     if(!js.IsConnected()) {
-        fault_manager.add_fault(Fault(true, FaultIdentifier::driverControllerUnreachable));
+        fault_manager.add_fault(Fault(true, FaultIdentifier::controllerUnreachable));
         planar_handle.release();
         twist_handle.release();
         goto watchdog;
+    } else {
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::controllerUnreachable));
     }
+
+    if(!robot_enabled || autonomous) goto watchdog;
 
     if(js.GetRawButton(1) && js.GetRawButton(3)) { //square and circle
         tracking->set_gyro_angle(0_rad);
