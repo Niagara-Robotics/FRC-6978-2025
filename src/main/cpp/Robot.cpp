@@ -16,6 +16,8 @@ void Robot::StartCompetition() {
     input_scheduler->register_task(&driver_input);
     input_scheduler->register_task(&operator_input);
 
+    drive_scheduler->register_task(&auto_pilot);
+
     tracking_scheduler->register_task(&tracking);
     tracking_scheduler->register_task(&intake);
     tracking_scheduler->register_task(&lift);
@@ -44,7 +46,8 @@ void Robot::StartCompetition() {
         global_fault_manager->refresh();
 
         frc::SmartDashboard::UpdateValues();
-        usleep(9000);
+        nt::NetworkTableInstance(nt::GetDefaultInstance()).Flush();
+        usleep(12000);
         if(should_exit) {
             break;
         }
