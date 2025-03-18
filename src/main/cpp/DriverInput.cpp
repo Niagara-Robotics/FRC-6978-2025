@@ -4,7 +4,7 @@
 #include <frc/DriverStation.h>
 
 #define DEAD_ZONE 0.07
-#define xyMultiplier 3.0_mps
+#define xyMultiplier 4.0_mps
 #define wMultiplier 4.5_rad_per_s
 
 #define BUTTON_TAKE_CONTROL 2
@@ -12,7 +12,8 @@
 void DriverInput::call(bool robot_enabled, bool autonomous) {
     auto alliance = frc::DriverStation::GetAlliance();
 
-    double x,y,omega;
+    double x,y,omega, radius, angle;
+    const double linearity = 0.35;
 
     if(!js.IsConnected()) {
         fault_manager.add_fault(Fault(true, FaultIdentifier::controllerUnreachable));
@@ -34,19 +35,33 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
     y = -js.GetRawAxis(0);
     omega = -js.GetRawAxis(2);
 
-    x = (fabs(x) > DEAD_ZONE)? 
-            ((x > 0)? 
-                ((x-DEAD_ZONE)/(1-DEAD_ZONE)) :
-                ((x+DEAD_ZONE)/(1-DEAD_ZONE))
+    radius = sqrt(pow(x, 2) + pow(y, 2));
+
+    radius = (1 - linearity)*pow(radius, 3) + (linearity)*radius;
+    angle = atan2(y, x);
+
+    radius = (fabs(radius) > DEAD_ZONE)? 
+            ((radius > 0)? 
+                ((radius-DEAD_ZONE)/(1-DEAD_ZONE)) :
+                ((radius+DEAD_ZONE)/(1-DEAD_ZONE))
             ) 
             : 0;
 
-    y = (fabs(y) > DEAD_ZONE)? 
+    frc::SmartDashboard::PutNumber("driver_radius", radius);
+    frc::SmartDashboard::PutNumber("driver_angle", angle);
+
+    x = cos(angle) * radius;
+    y = sin(angle) * radius;
+
+    frc::SmartDashboard::PutNumber("driver_x", x);
+    frc::SmartDashboard::PutNumber("driver_y", y);
+
+    /*y = (fabs(y) > DEAD_ZONE)? 
         ((y > 0)? 
             ((y-DEAD_ZONE)/(1-DEAD_ZONE)) :
             ((y+DEAD_ZONE)/(1-DEAD_ZONE))
         ) 
-        : 0;
+        : 0;*/
 
     omega = (fabs(omega) > DEAD_ZONE)? 
         ((omega> 0)? 
