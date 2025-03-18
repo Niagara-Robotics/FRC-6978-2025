@@ -118,18 +118,18 @@ private:
 
     ctre::phoenix6::configs::TalonFXConfiguration shoulder_config = ctre::phoenix6::configs::TalonFXConfiguration()
         .WithFeedback(ctre::phoenix6::configs::FeedbackConfigs()
-            .WithSensorToMechanismRatio(100)
+            .WithSensorToMechanismRatio(11.2207)
         )
         .WithMotorOutput(ctre::phoenix6::configs::MotorOutputConfigs()
-            .WithInverted(ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive)
+            .WithInverted(ctre::phoenix6::signals::InvertedValue::Clockwise_Positive)
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(5.5_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-5.5_V)
+            .WithPeakForwardVoltage(2.5_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-2.5_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
-            .WithStatorCurrentLimit(12_A)
+            .WithStatorCurrentLimit(30_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
@@ -137,7 +137,7 @@ private:
             .WithMotionMagicAcceleration(1.8_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
-            .WithKP(120).WithKI(0).WithKD(0.1)
+            .WithKP(60).WithKI(0).WithKD(0.1)
             .WithKS(0.2).WithKV(2.5).WithKG(0.25).WithKA(0.3)
             .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Elevator_Static)
         );
