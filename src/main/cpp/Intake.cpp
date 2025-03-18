@@ -129,7 +129,7 @@ void Intake::handle_pickup_coral() {
         if(intake_sensor.get_measurement().has_value())
             if(intake_sensor.get_measurement().value().distance_mm < coral_a_threshold &&
                 intake_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
-                intake_sensor.get_measurement().value().ambient < 32) 
+                intake_sensor.get_measurement().value().ambient < 800) 
             {
                 state = IntakeState::coral_horizontal;
                 coral_horizontal_start = std::chrono::steady_clock::now();
@@ -143,14 +143,14 @@ void Intake::handle_pickup_coral() {
         if(intake_sensor.get_measurement().has_value())
             if(intake_sensor.get_measurement().value().distance_mm < coral_horizontal_threshold &&
                 intake_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
-                intake_sensor.get_measurement().value().ambient < 32 && 
+                intake_sensor.get_measurement().value().ambient < 128 && 
                 std::chrono::steady_clock::now() - coral_horizontal_start > std::chrono::milliseconds(600))
                 state = IntakeState::coral_vertical_b;
         break;
     case IntakeState::coral_vertical_b:
         rotate_target_position = coral_vertical_b_position;
         vertical_control.Output = vertical_coral_b_voltage;
-        horizontal_control.Output = horizontal_coral_voltage;
+        horizontal_control.Output = vertical_coral_b_voltage * 0.8;
         if(has_coral()){
             state = IntakeState::standby;
             intake_action_channel.take_control(0, true);
@@ -209,6 +209,8 @@ void Intake::call(bool robot_enabled, bool autonomous) {
             (staging_sensor.get_measurement().value().distance_mm < coral_hold_threshold &&
                 staging_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
                 staging_sensor.get_measurement().value().ambient < 32);
+
+        ui_table.get()->PutNumber("bay_coral/ambient", staging_sensor.get_measurement().value().ambient);
         if(staging_sensor.get_measurement().value().status != grpl::LASERCAN_STATUS_VALID_MEASUREMENT) {
             last_staging_distance = -1;
         } else {
