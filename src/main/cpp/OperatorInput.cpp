@@ -1,7 +1,6 @@
 #include "OperatorInput.h"
 
 void OperatorInput::call(bool robot_enabled, bool autonomous) {
-    if(autonomous) return;
 
     if(!js.IsConnected()) {
         fault_manager.add_fault(Fault(true, FaultIdentifier::controllerUnreachable));
@@ -65,7 +64,7 @@ void OperatorInput::call(bool robot_enabled, bool autonomous) {
 }
 
 void OperatorInput::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::microseconds(9000);
+    this->next_execution = current_time + std::chrono::microseconds(10000);
 }
 
 bool OperatorInput::is_paused() {
