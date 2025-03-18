@@ -46,11 +46,6 @@ void Intake::handle_pickup_algae() {
     switch (state)
     {
     case IntakeState::standby:
-        if(has_coral()){ //imediately cancel the motion if there is a coral present
-            intake_action_channel.take_control(0, true);
-            intake_action_channel.set(0, IntakeAction::standby);
-            return;
-        }
         rotate_target_position = algae_pickup_position;
         vertical_control.Output = vertical_algae_pickup_voltage;
         horizontal_control.Output = horizontal_algae_pickup_voltage;
@@ -117,6 +112,11 @@ void Intake::handle_pickup_coral() {
     switch (state)
     {
     case IntakeState::standby:
+        if(has_coral()){ //imediately cancel the motion if there is a coral present
+            intake_action_channel.take_control(0, true);
+            intake_action_channel.set(0, IntakeAction::standby);
+            return;
+        }
         rotate_target_position = coral_vertical_a_position;
         vertical_control.Output = vertical_coral_a_voltage;
         horizontal_control.Output = 0_V;
