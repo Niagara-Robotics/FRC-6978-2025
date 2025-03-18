@@ -330,11 +330,11 @@ void Lift::handle_place() {
     case LiftDetailedState::eject_coral:
         target_lift_position = lift_place_positions[target_place_position.get()];
         target_shoulder_position = shoulder_place_position;
-        gripper_control.Output = -1_V;
+        gripper_control.Output = -4_V;
         target_twist_position = 0.5_tr;
         //skew backwards
         lateral_drive_handle.try_take_control();
-        lateral_drive_handle.set(LateralSwerveRequest(-0.35_mps, 0_mps, SwerveRequestType::full_robot_relative));
+        lateral_drive_handle.set(LateralSwerveRequest(-0.55_mps, 0_mps, SwerveRequestType::full_robot_relative));
         if(!gripper_coral && std::chrono::steady_clock::now() - eject_start > std::chrono::milliseconds(500)) 
         {
             target_mechanism_state.take_control(0, false);
@@ -515,7 +515,7 @@ bool Lift::is_paused() {
 }
 
 void Lift::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::milliseconds(8);
+    this->next_execution = current_time + std::chrono::milliseconds(10);
 }
 
 Lift::~Lift() {
