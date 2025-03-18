@@ -21,15 +21,15 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id): fa
     steering_encoder->GetConfigurator().Apply(config.steer_encoder_base_config);
 
     steering_position = &steering_encoder->GetAbsolutePosition();
-    steering_position->SetUpdateFrequency(500_Hz, 2_s); //maximum update frequency
+    steering_position->SetUpdateFrequency(600_Hz, 2_s); //maximum update frequency
 
     relative_steering_position = &steering_encoder->GetPosition();
-    relative_steering_position->SetUpdateFrequency(500_Hz, 2_s);
+    relative_steering_position->SetUpdateFrequency(600_Hz, 2_s);
 
     last_steering_relative_position = relative_steering_position->GetValue();
 
     steering_velocity = &steering_encoder->GetVelocity();
-    steering_velocity->SetUpdateFrequency(550_Hz, 2_s);
+    steering_velocity->SetUpdateFrequency(600_Hz, 2_s);
 
     steering_encoder->OptimizeBusUtilization();
 
@@ -42,10 +42,10 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id): fa
     drive_motor->SetPosition(0_tr);
 
     drive_position = &drive_motor->GetPosition();
-    drive_position->SetUpdateFrequency(500_Hz, 2_s);
+    drive_position->SetUpdateFrequency(600_Hz, 2_s);
 
     drive_velocity = &drive_motor->GetVelocity();
-    drive_velocity->SetUpdateFrequency(400_Hz, 2_s);
+    drive_velocity->SetUpdateFrequency(600_Hz, 2_s);
 
     drive_control = new controls::VelocityVoltage(0_tps);
     drive_control->UpdateFreqHz = 0_Hz; //synchronous request
@@ -77,7 +77,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id): fa
 
     steer_motor->SetControl(*steer_control);
 
-    steer_motor->OptimizeBusUtilization(0_Hz, 2_s);
+    steer_motor->OptimizeBusUtilization(50_Hz, 2_s);
 
     wheel_circumference = config.wheel_radius * M_PI * 2;
     std::cout << "wheel circumference " << wheel_circumference.value() << std::endl;
@@ -103,14 +103,10 @@ void SwerveModule::apply(frc::SwerveModuleState target_state)
         fault_manager.clear_fault(Fault(true, FaultIdentifier::steerMotorUnreachable));
     }
 
-    if(!steering_encoder->IsConnected()) {
+    if(!steering_encoder->IsConnected() || BaseStatusSignal::RefreshAll(*steering_position) != 0 || BaseStatusSignal::RefreshAll(*steering_velocity) != 0) {
         fault_manager.add_fault(Fault(true, FaultIdentifier::steerEncoderUnreachable));
     } else {
         fault_manager.clear_fault(Fault(true, FaultIdentifier::steerEncoderUnreachable));
-    }
-
-    if(BaseStatusSignal::RefreshAll(*steering_position, *steering_velocity) != 0) {
-        this->state = 10;
     }
 
     target_state = frc::SwerveModuleState::Optimize(target_state, frc::Rotation2d(steering_position->GetValue()));
@@ -132,11 +128,12 @@ void SwerveModule::apply(frc::SwerveModuleState target_state)
     if (drive_motor->SetControl(*drive_control) != 0) {
         this->state = 30;
     }
+    fault_manager.feed_watchdog();
 }
 
 frc::SwerveModulePosition SwerveModule::get_position() {
     if(BaseStatusSignal::RefreshAll(*steering_position, *drive_position, *relative_steering_position) != 0) {
-        this->state = 10;
+        this->state = 70;
     }
 
     //correct the drive position
@@ -144,7 +141,7 @@ frc::SwerveModulePosition SwerveModule::get_position() {
     last_steering_relative_position = relative_steering_position->GetValue();
     frc::SmartDashboard::PutNumber(id+"/corrected_drive_position", (drive_position->GetValue() - drive_position_correction).value());
 
-    return frc::SwerveModulePosition{(drive_position->GetValue() + drive_position_correction) / config.drive_ratio * (wheel_circumference / 1_tr), frc::Rotation2d(steering_position->GetValue())};
+    return frc::SwerveModulePosition{((drive_position->GetValue() - drive_position_correction) / config.drive_ratio) * (wheel_circumference / 1_tr), frc::Rotation2d(steering_position->GetValue())};
 }
 
 frc::SwerveModuleState SwerveModule::get_module_state() {
@@ -168,7 +165,7 @@ void SwerveModule::test_couple() {
 
     steer_motor->SetControl(steer_static_control);
 
-    units::angular_velocity::turns_per_second_t drive_velocity;
+    units::angular_velocity::turns_per_second_t drive_velocity = 0_tps;
     drive_velocity += steering_velocity->GetValue() * ((config.drive_inverted)? -config.couple_ratio : config.couple_ratio);
     drive_control->Velocity = drive_velocity;
     
@@ -181,8 +178,26 @@ void SwerveModule::idle() {
     if(BaseStatusSignal::RefreshAll(*steering_position, *steering_velocity) != 0) {
         this->state = 10;
     }
-    //steer_motor->SetControl(ctre::phoenix6::controls::CoastOut());
-    //drive_motor->SetControl(ctre::phoenix6::controls::CoastOut());
+    steer_motor->SetControl(ctre::phoenix6::controls::StaticBrake());
+    drive_motor->SetControl(ctre::phoenix6::controls::StaticBrake());
+    if(!drive_motor->IsConnected()) {
+        fault_manager.add_fault(Fault(true, FaultIdentifier::driveMotorUnreachable));
+    } else {
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::driveMotorUnreachable));
+    }
+
+    if(!steer_motor->IsConnected()) {
+        fault_manager.add_fault(Fault(true, FaultIdentifier::steerMotorUnreachable));
+    } else {
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::steerMotorUnreachable));
+    }
+
+    if(!steering_encoder->IsConnected() || BaseStatusSignal::RefreshAll(*steering_position) != 0 || BaseStatusSignal::RefreshAll(*steering_velocity) != 0) {
+        fault_manager.add_fault(Fault(true, FaultIdentifier::steerEncoderUnreachable));
+    } else {
+        fault_manager.clear_fault(Fault(true, FaultIdentifier::steerEncoderUnreachable));
+    }
+    fault_manager.feed_watchdog();
 }
 
 int SwerveModule::get_state() {
