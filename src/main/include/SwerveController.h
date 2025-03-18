@@ -47,15 +47,15 @@ private:
 
     ctre::phoenix6::configs::Slot0Configs drive_clc_gains = ctre::phoenix6::configs::Slot0Configs()
         .WithKP(0.09).WithKI(0).WithKD(0)
-        .WithKS(0.14).WithKV(0.105).WithKA(0.0015);
+        .WithKS(0.14).WithKV(0.103).WithKA(0.0015);
 
     ctre::phoenix6::configs::Slot0Configs steer_clc_gains = ctre::phoenix6::configs::Slot0Configs()
-        .WithKP(90.0).WithKI(0).WithKD(0)
-        .WithKS(0.148).WithKV(1.05).WithKA(0.002);
+        .WithKP(60.0).WithKI(0).WithKD(0)
+        .WithKS(0.148).WithKV(1.15).WithKA(0.003);
 
     ctre::phoenix6::configs::CurrentLimitsConfigs drive_current_limits = ctre::phoenix6::configs::CurrentLimitsConfigs()
         .WithStatorCurrentLimitEnable(true)
-        .WithStatorCurrentLimit(40_A);
+        .WithStatorCurrentLimit(45_A);
 
     ctre::phoenix6::configs::CurrentLimitsConfigs steer_current_limits = ctre::phoenix6::configs::CurrentLimitsConfigs()
         .WithStatorCurrentLimitEnable(true)
@@ -85,8 +85,8 @@ private:
         18.75, //steer ratio
         3.0, //couple ratio
         65_tr_per_s_sq, //steer acceleration
-        4.8_tps, //steer velocity(cruise)
-        1.92_in //wheel radius, 2 inches
+        5.0_tps, //steer velocity(cruise)
+        2.0_in //wheel radius, 2 inches
     );
 
     wpi::array<frc::Translation2d, 4> module_positions = 
