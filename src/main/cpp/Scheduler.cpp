@@ -27,14 +27,14 @@ void Scheduler::execute()
 {
     log("Hello!");
     while(true) {
-        std::chrono::time_point<std::chrono::steady_clock> next_exec_time = std::chrono::steady_clock::now() + std::chrono::microseconds(600);
+        std::chrono::time_point<std::chrono::steady_clock> next_exec_time = std::chrono::steady_clock::now() + std::chrono::microseconds(1000);
         for (Task *task : tasks)
         {
             if(stop_flag) {
                 return;
             }
             //compensates for slight delay in the scheduling system
-            if ((std::chrono::steady_clock::now() - std::chrono::microseconds(100)) > task->get_next_execution())
+            if ((std::chrono::steady_clock::now() - std::chrono::microseconds(50)) > task->get_next_execution())
             {
                 task->schedule_next(std::chrono::steady_clock::now());
                 task->call(enabled, autonomous);
