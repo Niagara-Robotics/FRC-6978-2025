@@ -8,6 +8,7 @@
 #include <frc/smartdashboard/SendableChooser.h>
 #include <frc2/command/Command.h>
 
+#include "Lift.h"
 
 //#include <pathplanner/lib/auto/AutoBuilder.h>
 
@@ -41,8 +42,13 @@ private:
 
     controlchannel::ControlHandle<LateralSwerveRequest> planar_handle;
     controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle;
+
+    controlchannel::ControlHandle<LiftMechanismState> lift_handle;
+
     Tracking *tracking;
     SwerveController *swerve_controller;
+
+    LateralSwerveRequest point_proportional(frc::Pose2d target, frc::Pose2d current);
 
     units::angular_velocity::radians_per_second_t heading_proportional(units::angle::radian_t target, units::angle::radian_t current);
     frc2::Subsystem subsystem = frc2::Subsystem();
@@ -57,7 +63,9 @@ private:
 
 public:
     controlchannel::ControlChannel<AutoPilotTwistMode> twist_mode_channel = controlchannel::ControlChannel<AutoPilotTwistMode>(AutoPilotTwistMode::none);
-    controlchannel::ControlChannel<units::angle::radian_t> heading_channel = controlchannel::ControlChannel<units::angle::radian_t>(0_rad);
+    controlchannel::ControlChannel<AutoPilotTranslateMode> lateral_mode_channel = controlchannel::ControlChannel<AutoPilotTranslateMode>(AutoPilotTranslateMode::none);
+
+    controlchannel::ControlChannel<units::angle::radian_t> heading_channel = controlchannel::ControlChannel<units::angle::radian_t>(-2.113_rad);
     
     
     controlchannel::ControlChannel<frc::Pose2d> pose_channel = controlchannel::ControlChannel<frc::Pose2d>(frc::Pose2d());
@@ -65,6 +73,7 @@ public:
     AutoPilot(
         controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
+        controlchannel::ControlHandle<LiftMechanismState> lift_handle,
         Tracking *tracking,
         SwerveController *swerve_controller);
 

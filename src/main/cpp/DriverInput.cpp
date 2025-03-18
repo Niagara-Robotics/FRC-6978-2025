@@ -69,6 +69,12 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         } else {
             fault_manager.clear_fault(Fault(false, FaultIdentifier::drivebaseTakeoverFailed));
         }
+
+        ap_translate_handle.try_take_control();
+        ap_translate_handle.set(AutoPilotTranslateMode::none);
+
+        ap_twist_handle.try_take_control();
+        ap_twist_handle.set(AutoPilotTwistMode::none);
     }
 
     planar_handle.set(LateralSwerveRequest(x*xyMultiplier, y*xyMultiplier, robot_relative? SwerveRequestType::full_robot_relative: SwerveRequestType::full));
@@ -78,6 +84,15 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         robot_relative = !robot_relative;
     }
     last_rrel_button = js.GetRawButton(10);
+
+
+    if(js.GetRawButton(9)) {
+        ap_translate_handle.try_take_control();
+        ap_translate_handle.set(AutoPilotTranslateMode::point);
+
+        ap_twist_handle.try_take_control();
+        ap_twist_handle.set(AutoPilotTwistMode::heading);
+    }
 
     frc::SmartDashboard::PutBoolean("input_robot_relative", robot_relative);
 
@@ -101,6 +116,7 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
     if(js.GetRawButton(8)) {
         lift_handle.try_take_control();
         lift_handle.set(LiftMechanismState::place);
+        ap_translate_handle.set(AutoPilotTranslateMode::none);
     }
 
 
@@ -110,7 +126,7 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
 }
 
 void DriverInput::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::microseconds(9000);
+    this->next_execution = current_time + std::chrono::microseconds(10000);
 }
 
 bool DriverInput::is_paused() {

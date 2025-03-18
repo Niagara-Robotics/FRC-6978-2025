@@ -18,9 +18,10 @@
 
 AutoPilot::AutoPilot(controlchannel::ControlHandle<LateralSwerveRequest> planar_handle, 
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
+        controlchannel::ControlHandle<LiftMechanismState> lift_handle,
         Tracking *tracking,
         SwerveController *swerve_controller):
-        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), swerve_controller(swerve_controller)
+        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), swerve_controller(swerve_controller), lift_handle(lift_handle)
 {   
 
     /*AutoBuilder::configure(
@@ -73,6 +74,30 @@ units::angular_velocity::radians_per_second_t AutoPilot::heading_proportional(un
     return output;
 }
 
+LateralSwerveRequest AutoPilot::point_proportional(frc::Pose2d target, frc::Pose2d current) {
+    units::meter_t deltaX = (target.X() - current.X());
+    units::meter_t deltaY = (target.Y() - current.Y());
+
+    units::meters_per_second_t xOut = deltaX * (7.5_mps / 1_m);
+
+    units::meters_per_second_t yOut = deltaY * (7.5_mps / 1_m);
+
+    units::meters_per_second_t max = 1.0_mps;
+
+    xOut = (xOut > max)? max: xOut;
+    xOut = (xOut < -max)? -max: xOut;
+
+    yOut = (yOut > max)? max: yOut;
+    yOut = (yOut < -max)? -max: yOut;
+
+    if(sqrt(pow(deltaX.value(), 2) + pow(deltaY.value(), 2)) < 0.025) {
+        xOut = 0_mps;
+        yOut = 0_mps;
+    }
+
+    return LateralSwerveRequest(xOut, yOut, SwerveRequestType::full);
+}
+
 void AutoPilot::call(bool robot_enabled, bool autonomous) {
     frc::SmartDashboard::PutBoolean("auto_running", auto_running);
     frc::SmartDashboard::PutBoolean("auto_initialized", auto_initialized);
@@ -102,8 +127,22 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
         break;
     }
 
+    switch (lateral_mode_channel.get())
+    {
+    case AutoPilotTranslateMode::none:
+        planar_handle.release();
+        break;
+    case AutoPilotTranslateMode::point:
+        planar_handle.try_take_control();
+        planar_handle.set(point_proportional(frc::Pose2d(frc::Translation2d(4.979_m,5.19_m), frc::Rotation2d()), tracking->get_pose()));
+        break;
+    default:
+        break;
+    }
+
     if(!robot_enabled) {
         auto_running = false;
+        planar_handle.release();
         return;
     }
     if(autonomous) {
@@ -113,6 +152,8 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
             planar_handle.try_take_control();
             planar_handle.set(LateralSwerveRequest(0.5_mps, 0.0_mps, SwerveRequestType::full_robot_relative));
             auto_start = std::chrono::steady_clock::now();
+            lift_handle.try_take_control();
+            lift_handle.set(LiftMechanismState::mid);
         }
 
         if(std::chrono::steady_clock::now() - auto_start > std::chrono::milliseconds(2500) && auto_running) {

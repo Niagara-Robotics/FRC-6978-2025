@@ -13,6 +13,7 @@
 #include "GyroInput.h"
 #include "DriverInput.h"
 #include "Tracking.h"
+#include "AutoPilot.h"
 
 #include "FaultManager.h"
 
@@ -44,11 +45,21 @@ class Robot: frc::RobotBase {
 
     Lift lift = Lift(&intake, swerve_controller->planar_velocity_channel.get_handle(), global_fault_manager);
 
+    AutoPilot auto_pilot = AutoPilot(
+        swerve_controller->planar_velocity_channel.get_handle(), 
+        swerve_controller->twist_velocity_channel.get_handle(),
+        lift.target_mechanism_state.get_handle(),
+        &tracking,
+        swerve_controller
+    );
+
     DriverInput driver_input = DriverInput(
         swerve_controller->planar_velocity_channel.get_handle(), 
         swerve_controller->twist_velocity_channel.get_handle(),
         intake.intake_action_channel.get_handle(),
         lift.target_mechanism_state.get_handle(),
+        auto_pilot.lateral_mode_channel.get_handle(),
+        auto_pilot.twist_mode_channel.get_handle(),
         global_fault_manager,
         &tracking
     );
