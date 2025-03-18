@@ -19,7 +19,7 @@ SwerveController::SwerveController(GlobalFaultManager *global_fm)
 }
 
 void SwerveController::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::microseconds(2000);
+    this->next_execution = current_time + std::chrono::microseconds(1700);
 }
 
 frc::SwerveDriveKinematics<4> SwerveController::get_kinematics() {
@@ -66,6 +66,7 @@ void SwerveController::call(bool robot_enabled, bool autonomous) {
     {
         if(robot_enabled) {
             modules[i]->apply(target_states[i]);
+            //modules[i]->test_couple();
         }
         else  {
             modules[i]->idle();
