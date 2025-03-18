@@ -2,6 +2,7 @@
 
 #include <frc/smartdashboard/SmartDashboard.h>
 #include "string.h"
+#include <hal/HALBase.h>
 
 Lift::Lift(intake::Intake *intake,controlchannel::ControlHandle<LateralSwerveRequest> lateral_drive_handle, GlobalFaultManager *global_fm): intake(intake),get_out_handle(intake->get_outta_the_way_channel.get_handle()),lateral_drive_handle(lateral_drive_handle) {
     global_fm->register_manager(&fault_manager);
@@ -462,6 +463,10 @@ void Lift::call(bool robot_enabled, bool autonomous) {
         gripper_coral = (gripper_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
             gripper_sensor.get_measurement().value().ambient < 32 && gripper_sensor.get_measurement().value().distance_mm < gripper_coral_threshold);
         frc::SmartDashboard::PutBoolean("gripper_coral", gripper_coral);
+    } else if(HAL_GetRuntimeType() == HAL_RuntimeType::HAL_Runtime_Simulation) {
+        frc::SmartDashboard::PutNumber("gripper_distance", 76);
+        frc::SmartDashboard::PutNumber("gripper_ambient", 135);
+        frc::SmartDashboard::PutBoolean("gripper_coral", true);
     }
 
     lift_control.Position = filter_lift_position(target_lift_position);
