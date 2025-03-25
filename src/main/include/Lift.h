@@ -52,13 +52,14 @@ class Lift : public Task
 private:
 
     ctre::phoenix6::hardware::TalonFX lift_motor = ctre::phoenix6::hardware::TalonFX(10, "rio");
+    ctre::phoenix6::hardware::TalonFX lift_follower = ctre::phoenix6::hardware::TalonFX(11, "rio");
 
     ctre::phoenix6::configs::TalonFXConfiguration lift_config = ctre::phoenix6::configs::TalonFXConfiguration()
         .WithFeedback(ctre::phoenix6::configs::FeedbackConfigs()
-            .WithSensorToMechanismRatio(50)
+            .WithSensorToMechanismRatio(14.54)
         )
         .WithMotorOutput(ctre::phoenix6::configs::MotorOutputConfigs()
-            .WithInverted(ctre::phoenix6::signals::InvertedValue::Clockwise_Positive)
+            .WithInverted(ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive)
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
@@ -66,16 +67,16 @@ private:
             .WithPeakReverseVoltage(-11.5_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
-            .WithStatorCurrentLimit(20_A)
+            .WithStatorCurrentLimit(25_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(1.85_tps)
-            .WithMotionMagicAcceleration(5_tr_per_s_sq)
+            .WithMotionMagicCruiseVelocity(5.0_tps)
+            .WithMotionMagicAcceleration(15_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
-            .WithKP(45).WithKI(0).WithKD(0.1)
-            .WithKS(0.2).WithKV(4.6).WithKG(0.25).WithKA(0.35)
+            .WithKP(40).WithKI(0).WithKD(0.1)
+            .WithKS(0.2).WithKV(1.86).WithKG(0.25).WithKA(0.05)
             .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Elevator_Static)
         );
 
@@ -90,7 +91,7 @@ private:
 
     const units::angle::turn_t lift_tower_position = 3.2_tr;
     const units::angle::turn_t lift_tower_bayopen_position = 2.9_tr;
-    const units::angle::turn_t lift_pick_position = 1.405_tr;
+    const units::angle::turn_t lift_pick_position = 1.38_tr;
     const units::angle::turn_t lift_flipped_park_position = 3.0_tr;
 
     const units::angle::turn_t lift_place_position = 2.05_tr;
@@ -118,32 +119,32 @@ private:
 
     ctre::phoenix6::configs::TalonFXConfiguration shoulder_config = ctre::phoenix6::configs::TalonFXConfiguration()
         .WithFeedback(ctre::phoenix6::configs::FeedbackConfigs()
-            .WithSensorToMechanismRatio(11.2207)
+            .WithSensorToMechanismRatio(81.45)
         )
         .WithMotorOutput(ctre::phoenix6::configs::MotorOutputConfigs()
-            .WithInverted(ctre::phoenix6::signals::InvertedValue::Clockwise_Positive)
+            .WithInverted(ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive)
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(2.5_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-2.5_V)
+            .WithPeakForwardVoltage(7.5_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-7.5_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(30_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(0.50_tps)
-            .WithMotionMagicAcceleration(1.8_tr_per_s_sq)
+            .WithMotionMagicCruiseVelocity(3.0_tps)
+            .WithMotionMagicAcceleration(3.2_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
             .WithKP(60).WithKI(0).WithKD(0.1)
-            .WithKS(0.2).WithKV(2.5).WithKG(0.25).WithKA(0.3)
+            .WithKS(0.2).WithKV(1.5).WithKG(0.25).WithKA(0.06)
             .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Elevator_Static)
         );
 
     const units::angle::turn_t shoulder_park_position = 0_tr;
-    const units::angle::turn_t shoulder_max_position = 0.5_tr;
+    const units::angle::turn_t shoulder_max_position = 0.52_tr;
 
     const units::angle::turn_t shoulder_clear_position = 0.050_tr;
     const units::angle::turn_t shoulder_bay_exit_limit = 0.49_tr; //when the claw is in the bay
@@ -153,7 +154,7 @@ private:
 
     const units::angle::turn_t shoulder_level_position = 0.25_tr;
 
-    const units::angle::turn_t shoulder_pick_position = 0.5_tr;
+    const units::angle::turn_t shoulder_pick_position = 0.51_tr;
     const units::angle::turn_t shoulder_place_position = 0.15_tr;
     const units::angle::turn_t shoulder_algae_position = 0.175_tr;
 

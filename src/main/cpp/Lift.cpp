@@ -8,18 +8,22 @@ Lift::Lift(intake::Intake *intake,controlchannel::ControlHandle<LateralSwerveReq
     global_fm->register_manager(&fault_manager);
     
     lift_motor.GetConfigurator().Apply(lift_config);
+    lift_follower.GetConfigurator().Apply(lift_config);
+    lift_follower.SetControl(ctre::phoenix6::controls::Follower(10, true));
     shoulder_motor.GetConfigurator().Apply(shoulder_config);
     shoulder_encoder.GetConfigurator().Apply(shoulder_encoder_configuration);
 
-    shoulder_motor_position.SetUpdateFrequency(100_Hz);
-    shoulder_encoder_position.SetUpdateFrequency(100_Hz);
-    lift_position.SetUpdateFrequency(100_Hz);
+    shoulder_motor_position.SetUpdateFrequency(165_Hz);
+    shoulder_encoder_position.SetUpdateFrequency(165_Hz);
+    shoulder_motor.SetPosition(0_tr);
+    lift_position.SetUpdateFrequency(165_Hz);
 
     shoulder_motor.SetPosition(shoulder_encoder.GetAbsolutePosition().GetValue());
 
     lift_motor.SetPosition(0_tr);
 
     lift_control.UpdateFreqHz = 0_Hz;
+    shoulder_control.UpdateFreqHz = 0_Hz;
 
     twist_motor.GetConfigurator().Apply(twist_config);
     twist_motor.SetPosition(0_tr);
@@ -32,30 +36,30 @@ units::angle::turn_t Lift::filter_lift_position(units::angle::turn_t input) {
         return lift_lock_position;
     }
 
-    ctre::phoenix6::BaseStatusSignal::RefreshAll(shoulder_motor_position, lift_position, shoulder_encoder_position);
+    ctre::phoenix6::BaseStatusSignal::RefreshAll(shoulder_motor_position, lift_position);
     input = (input > max_lift_position)? max_lift_position: input;
     input = (input < lift_park_position)? lift_park_position: input;
     //shoulder is in the bay traverse zone
-    if(shoulder_encoder_position.GetValue() > shoulder_bay_enter_limit && shoulder_encoder_position.GetValue() < shoulder_bay_exit_limit)
+    if(shoulder_motor_position.GetValue() > shoulder_bay_enter_limit && shoulder_motor_position.GetValue() < shoulder_bay_exit_limit)
         input = (input < lift_min_bay_traverse_position)? lift_min_bay_traverse_position : input;
     //shoulder is in the bay
-    else if(shoulder_encoder_position.GetValue() > shoulder_bay_exit_limit) 
+    else if(shoulder_motor_position.GetValue() > shoulder_bay_exit_limit) 
         input = (input < lift_min_bay_position)? lift_min_bay_position : input;
     else //shoulder is NOT in the bay
         //lock to the park position if the shoulder is in or the intake is not clear
-        input = (shoulder_encoder_position.GetValue() < shoulder_clear_position ||
+        input = (shoulder_motor_position.GetValue() < shoulder_clear_position ||
             ( intake->get_clearance_level() == intake::IntakeClearanceLevel::none && lift_position.GetValue() < lift_intake_liftonly_clearance))? lift_park_position : input;
     
     if(intake->get_clearance_level() == intake::IntakeClearanceLevel::lift_only)
-        if(shoulder_encoder_position.GetValue() > shoulder_bay_exit_limit)
+        if(shoulder_motor_position.GetValue() > shoulder_bay_exit_limit)
             input = (input < lift_flipped_park_position)? lift_flipped_park_position : input;
-        else if(shoulder_encoder_position.GetValue() > shoulder_intake_liftonly_clearance)
+        else if(shoulder_motor_position.GetValue() > shoulder_intake_liftonly_clearance)
             input = (input < lift_intake_liftonly_clearance)? lift_intake_liftonly_clearance : input;
 
     if(intake->get_clearance_level() == intake::IntakeClearanceLevel::bay)
-        if(shoulder_encoder_position.GetValue() > shoulder_bay_exit_limit)
+        if(shoulder_motor_position.GetValue() > shoulder_bay_exit_limit)
             input = (input < lift_min_bay_position)? lift_min_bay_position : input;
-        else if(shoulder_encoder_position.GetValue() > shoulder_level_position)
+        else if(shoulder_motor_position.GetValue() > shoulder_level_position)
             input = (input < lift_min_bay_traverse_position)? lift_min_bay_traverse_position : input;
     
     //if the lift is NOT parked and the intake is NOT clear, there is something very wrong! lock the lift position!
@@ -93,7 +97,7 @@ units::angle::turn_t Lift::filter_shoulder_position(units::angle::turn_t input) 
             input = (input > shoulder_intake_liftonly_clearance)? shoulder_intake_liftonly_clearance : input;
         else if(lift_position.GetValue() >= lift_min_bay_traverse_position)
             input = (input > shoulder_max_position)? shoulder_max_position: input; //this is the ONLY case the max limit is allowed
-        else if(shoulder_encoder_position.GetValue() > shoulder_bay_enter_limit && lift_position.GetValue() <= lift_min_bay_traverse_position) //in the bay
+        else if(shoulder_motor_position.GetValue() > shoulder_bay_enter_limit && lift_position.GetValue() <= lift_min_bay_traverse_position) //in the bay
             input = (input < shoulder_bay_exit_limit)? shoulder_bay_exit_limit + 2.5_deg: input;
         else 
             input = (input > shoulder_level_position)? shoulder_level_position - 2.5_deg: input;
@@ -117,12 +121,21 @@ void Lift::handle_park() {
     case LiftDetailedState::park:
         target_lift_position = lift_park_position;
         target_shoulder_position = shoulder_park_position;
+        target_twist_position = 0.0_tr;
         break;
     case LiftDetailedState::tower:
         target_lift_position = lift_tower_position;
         target_shoulder_position = shoulder_clear_position;
         if(abs(lift_position.GetValueAsDouble() - lift_tower_position.value()) < 0.01)
             detailed_state = LiftDetailedState::park;
+        break;
+    case LiftDetailedState::mid:
+        target_lift_position = lift_park_position;
+        target_shoulder_position = shoulder_intake_liftonly_clearance + 0_deg;
+        target_twist_position = 0.0_tr;
+        if(abs(lift_position.GetValueAsDouble() - lift_park_position.value()) < 0.01)
+            detailed_state = LiftDetailedState::park;
+        
         break;
     case LiftDetailedState::prep_pick:
         detailed_state = LiftDetailedState::tower;
@@ -157,7 +170,7 @@ void Lift::handle_pick() {
         target_shoulder_position = 0.5_tr;
         gripper_control.Output = 0_V;
         target_twist_position = 0.25_tr;
-        if(intake->has_coral() && fabs(shoulder_encoder_position.GetValueAsDouble() - 0.5) < 0.005)
+        if(intake->has_coral() && fabs(shoulder_motor_position.GetValueAsDouble() - 0.5) < 0.005)
             detailed_state = LiftDetailedState::pick;
         break;
     case LiftDetailedState::pick:
@@ -243,7 +256,7 @@ void Lift::handle_mid() {
         target_shoulder_position = shoulder_clear_position + 15_deg;
         gripper_control.Output = (gripper_coral)? 1_V : 0_V;
         target_twist_position = 0.25_tr;
-        if(fabs(shoulder_encoder_position.GetValueAsDouble() - (shoulder_clear_position + 15_deg).value()) < 0.01)
+        if(shoulder_motor_position.GetValue() < 0.26_tr)
             detailed_state = LiftDetailedState::mid;
         break;
     case LiftDetailedState::prep_pick:
@@ -251,7 +264,7 @@ void Lift::handle_mid() {
         target_shoulder_position = shoulder_intake_liftonly_clearance + 5_deg;
         gripper_control.Output = (gripper_coral)? 1_V : 0_V;
         target_twist_position = 0.5_tr;
-        if(fabs(shoulder_encoder_position.GetValueAsDouble() - (shoulder_intake_liftonly_clearance + 5_deg).value()) < 0.01)
+        if(shoulder_motor_position.GetValue() < 0.25_tr)
             detailed_state = LiftDetailedState::mid;
         break;
     case LiftDetailedState::pick:
@@ -259,7 +272,7 @@ void Lift::handle_mid() {
         target_shoulder_position = 0.5_tr;
         gripper_control.Output = (gripper_coral)? 1_V : 0_V;
         target_twist_position = 0.25_tr;
-        if(fabs(lift_position.GetValueAsDouble() - lift_tower_bayopen_position.value()) < 0.01)
+        if(fabs(lift_position.GetValueAsDouble() - lift_tower_bayopen_position.value()) < 0.1)
             detailed_state = LiftDetailedState::tower;
         break;
     case LiftDetailedState::prep_place:
@@ -271,7 +284,7 @@ void Lift::handle_mid() {
         target_shoulder_position = shoulder_intake_liftonly_clearance + 5_deg;
         gripper_control.Output = 0_V;
         target_twist_position = 0.5_tr;
-        if(fabs(shoulder_encoder_position.GetValueAsDouble() - (shoulder_intake_liftonly_clearance + 5_deg).value()) < 0.01)
+        if(fabs(shoulder_motor_position.GetValueAsDouble() - (shoulder_intake_liftonly_clearance + 5_deg).value()) < 0.01)
             detailed_state = LiftDetailedState::mid;
 
         break;
@@ -290,7 +303,7 @@ void Lift::handle_mid() {
         target_shoulder_position = shoulder_intake_liftonly_clearance + 5_deg;
         gripper_control.Output = 0_V;
         target_twist_position = 0.5_tr;
-        if(fabs(shoulder_encoder_position.GetValueAsDouble() - (shoulder_intake_liftonly_clearance + 5_deg).value()) < 0.01)
+        if(fabs(shoulder_motor_position.GetValueAsDouble() - (shoulder_intake_liftonly_clearance + 5_deg).value()) < 0.01)
             detailed_state = LiftDetailedState::prep_algae;
         break;
     
@@ -323,7 +336,7 @@ void Lift::handle_place() {
         target_shoulder_position = shoulder_place_position;
         gripper_control.Output = 0_V;
         target_twist_position = 0.5_tr;
-        if(fabs(shoulder_encoder_position.GetValueAsDouble() - shoulder_place_position.value()) < 0.008){
+        if(fabs(shoulder_motor_position.GetValueAsDouble() - shoulder_place_position.value()) < 0.008){
             detailed_state = LiftDetailedState::eject_coral;
             eject_start = std::chrono::steady_clock::now();
         }
@@ -384,7 +397,7 @@ void Lift::handle_algae() {
 
 void Lift::call(bool robot_enabled, bool autonomous) {
 
-    ctre::phoenix6::BaseStatusSignal::RefreshAll(shoulder_motor_position, lift_position, shoulder_encoder_position);
+    ctre::phoenix6::BaseStatusSignal::RefreshAll(shoulder_motor_position, lift_position/*, shoulder_encoder_position*/);
     get_out_handle.try_take_control();
 
     //target_shoulder_position = 0.1_tr;
@@ -439,23 +452,28 @@ void Lift::call(bool robot_enabled, bool autonomous) {
     //shoulder is out beyond the intake clearance and lift is below the intake(or the mechanism wants to pick)
     if((target_shoulder_position > shoulder_intake_liftonly_clearance && 
         (lift_position.GetValue() < lift_intake_liftonly_clearance || target_lift_position < lift_intake_liftonly_clearance)) ||
-        target_mechanism_state.get() == LiftMechanismState::pick || shoulder_encoder_position.GetValue() > shoulder_level_position + 5_deg) {
+        target_mechanism_state.get() == LiftMechanismState::pick || shoulder_motor_position.GetValue() > shoulder_level_position + 5_deg) {
         get_out_handle.set(intake::IntakeClearanceLevel::bay);
     }
     else if( //if lift is in collide zone, or lift target > liftonly clearance and lift < liftonly clearance, or lift target < liftonly clearance and lift > liftonly clearance
         target_lift_position > lift_park_position ||
         target_shoulder_position >= shoulder_clear_position ||
         lift_position.GetValue() > lift_park_position + 2.5_deg ||
-        shoulder_encoder_position.GetValue() > shoulder_park_position + 8_deg)
+        shoulder_motor_position.GetValue() > shoulder_park_position + 8_deg)
     {
         get_out_handle.set(intake::IntakeClearanceLevel::lift_only);
     } else {
         get_out_handle.set(intake::IntakeClearanceLevel::none);
     }
 
-    twist_motor.SetControl(ctre::phoenix6::controls::MotionMagicVoltage(target_twist_position));
+    if(robot_enabled) {
+        twist_motor.SetControl(ctre::phoenix6::controls::MotionMagicVoltage(target_twist_position));
 
-    gripper_motor.SetControl(gripper_control);
+        gripper_motor.SetControl(gripper_control);
+    } else {
+        twist_motor.Disable();
+        gripper_motor.Disable();
+    }
 
     if(gripper_sensor.get_measurement().has_value()) {
         frc::SmartDashboard::PutNumber("gripper_distance", gripper_sensor.get_measurement().value().distance_mm);
@@ -469,10 +487,14 @@ void Lift::call(bool robot_enabled, bool autonomous) {
         frc::SmartDashboard::PutBoolean("gripper_coral", true);
     }
 
-    lift_control.Position = filter_lift_position(target_lift_position);
-    lift_motor.SetControl(lift_control);
+    if(robot_enabled) {
+        lift_control.Position = filter_lift_position(target_lift_position);
+        lift_motor.SetControl(lift_control);
+    } else {
+        lift_motor.Disable();
+    }
 
-    switch (rotate_calibration_state)
+    /*switch (rotate_calibration_state)
     {
     case ShoulderCalibrationState::uncalibrated:
         if(!robot_enabled) break;
@@ -501,10 +523,12 @@ void Lift::call(bool robot_enabled, bool autonomous) {
         break;
     
     case ShoulderCalibrationState::calibrated:
-        shoulder_control.Position = filter_shoulder_position(target_shoulder_position);
-        shoulder_motor.SetControl(shoulder_control);
+        
         break;
-    }
+    }*/
+
+    shoulder_control.Position = filter_shoulder_position(target_shoulder_position);
+    shoulder_motor.SetControl(shoulder_control);
 
     ui_table.get()->PutNumber("shoulder/calibration_state", (int)rotate_calibration_state);
     ui_table.get()->PutNumber("shoulder/target_position", shoulder_control.Position.value());
@@ -520,7 +544,7 @@ bool Lift::is_paused() {
 }
 
 void Lift::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::milliseconds(10);
+    this->next_execution = current_time + std::chrono::milliseconds(6);
 }
 
 Lift::~Lift() {
