@@ -225,6 +225,8 @@ void Intake::call(bool robot_enabled, bool autonomous) {
     ui_table.get()->PutNumber("rotate/encoder_position", rotate_encoder_position.GetValueAsDouble());
     ui_table.get()->PutNumber("rotate/target_position", rotate_control.Position.value());
     ui_table.get()->PutNumber("vertical/voltage_out", vertical_control.Output.value());
+    ui_table.get()->PutNumber("state", (int)state);
+    ui_table.get()->PutNumber("action", (int)intake_action_channel.get());
 
     //safety checks
     
