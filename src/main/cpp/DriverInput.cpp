@@ -71,7 +71,7 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
         : 0;
 
     
-    if (alliance && alliance.value() == frc::DriverStation::Alliance::kRed) {
+    if (alliance && alliance.value() == frc::DriverStation::Alliance::kRed && !robot_relative) {
         x = -x;
         y = -y;
     }
@@ -103,10 +103,10 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
 
     if(js.GetRawButton(9)) {
         ap_translate_handle.try_take_control();
-        ap_translate_handle.set(AutoPilotTranslateMode::point);
+        ap_translate_handle.set(AutoPilotTranslateMode::reef);
 
         ap_twist_handle.try_take_control();
-        ap_twist_handle.set(AutoPilotTwistMode::heading);
+        ap_twist_handle.set(AutoPilotTwistMode::reef);
     }
 
     frc::SmartDashboard::PutBoolean("input_robot_relative", robot_relative);

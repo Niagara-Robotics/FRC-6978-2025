@@ -10,29 +10,43 @@
 
 #include "Lift.h"
 
-//#include <pathplanner/lib/auto/AutoBuilder.h>
+#include <pathplanner/lib/auto/AutoBuilder.h>
 
 #include <iostream>
 #include <chrono>
 
-//#include <pathplanner/lib/controllers/PPHolonomicDriveController.h>
-//#include <pathplanner/lib/auto/NamedCommands.h>
+#include <pathplanner/lib/controllers/PPHolonomicDriveController.h>
+#include <pathplanner/lib/auto/NamedCommands.h>
 
-//using namespace pathplanner;
+using namespace pathplanner;
 
 enum class AutoPilotTwistMode {
     none,
     heading,
     face,
     pose,
-    speaker,
+    reef,
     planner
 };
 
 enum class AutoPilotTranslateMode {
     none,
-    point,
+    reef,
     planner
+};
+
+enum class ReefFace {
+    AB = 0,
+    CD = 1,
+    EF = 2,
+    GH = 3,
+    IJ = 4,
+    KL = 5
+};
+
+enum class ReefTree {
+    left,
+    right
 };
 
 class AutoPilot: public Task, frc2::Subsystem
@@ -58,6 +72,27 @@ private:
 
     std::chrono::time_point<std::chrono::steady_clock> auto_start;
 
+    frc::Pose2d red_reef_centers[6] = {
+        frc::Pose2d(546.87_in, 158.50_in, frc::Rotation2d(0_rad)), //AB
+        frc::Pose2d(530.49_in, 186.83_in, frc::Rotation2d(60_deg)), //CD
+        frc::Pose2d(497.77_in, 186.83_in, frc::Rotation2d(120_deg)), //EF
+        frc::Pose2d(481.39_in, 158.50_in, frc::Rotation2d(180_deg)), //GH
+        frc::Pose2d(497.77_in, 130.17_in, frc::Rotation2d(240_deg)), //IJ
+        frc::Pose2d(530.49_in, 130.17_in, frc::Rotation2d(300_deg)) //KL
+    };
+
+    frc::Pose2d blue_reef_centers[6] = {
+        frc::Pose2d(144.0_in, 158.5_in, frc::Rotation2d(180_deg)), //AB
+        frc::Pose2d(160.39_in, 130.17_in, frc::Rotation2d(240_deg)), //CD
+        frc::Pose2d(193.1_in, 130.17_in, frc::Rotation2d(300_deg)), //EF
+        frc::Pose2d(209.49_in, 158.5_in, frc::Rotation2d(0_deg)), //GH
+        frc::Pose2d(193.1_in, 186.83_in, frc::Rotation2d(60_deg)), //IJ
+        frc::Pose2d(160.39_in, 186.83_in, frc::Rotation2d(120_deg)), //AB
+    };
+
+    units::length::meter_t whisker_clear_distance = 21_in;
+    units::length::meter_t whisker_strafe_distance = 7_in;
+
     bool auto_initialized = false;
     bool auto_running = false;
 
@@ -68,6 +103,9 @@ public:
     controlchannel::ControlChannel<units::angle::radian_t> heading_channel = controlchannel::ControlChannel<units::angle::radian_t>(-2.113_rad);
     
     
+    controlchannel::ControlChannel<ReefFace> reef_face_channel = controlchannel::ControlChannel<ReefFace>(ReefFace::KL);
+    controlchannel::ControlChannel<ReefTree> reef_tree_channel = controlchannel::ControlChannel<ReefTree>(ReefTree::left);
+
     controlchannel::ControlChannel<frc::Pose2d> pose_channel = controlchannel::ControlChannel<frc::Pose2d>(frc::Pose2d());
 
     AutoPilot(
