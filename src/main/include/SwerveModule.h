@@ -104,6 +104,8 @@ private:
     ctre::phoenix6::controls::MotionMagicVoltage *steer_control;
     ctre::phoenix6::controls::VelocityVoltage *drive_control;
 
+    ctre::phoenix6::StatusSignal<units::scalar_t> *drive_duty_cycle;
+
     units::length::meter_t wheel_circumference;
 
     SwerveModuleConfig config;
@@ -123,6 +125,7 @@ public:
     void apply(frc::SwerveModuleState state);
     void idle();
     void test_couple();
+    void fault_check();
     FaultManager fault_manager;
     frc::SwerveModulePosition get_position();
     frc::SwerveModuleState get_module_state();

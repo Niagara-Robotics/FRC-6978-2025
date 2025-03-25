@@ -50,8 +50,8 @@ private:
         .WithKS(0.14).WithKV(0.103).WithKA(0.0015);
 
     ctre::phoenix6::configs::Slot0Configs steer_clc_gains = ctre::phoenix6::configs::Slot0Configs()
-        .WithKP(60.0).WithKI(0).WithKD(0)
-        .WithKS(0.148).WithKV(1.15).WithKA(0.003);
+        .WithKP(85.0).WithKI(0).WithKD(0)
+        .WithKS(0.0).WithKV(0.95).WithKA(0.0005);
 
     ctre::phoenix6::configs::CurrentLimitsConfigs drive_current_limits = ctre::phoenix6::configs::CurrentLimitsConfigs()
         .WithStatorCurrentLimitEnable(true)
@@ -91,10 +91,10 @@ private:
 
     wpi::array<frc::Translation2d, 4> module_positions = 
     {
-        frc::Translation2d(0.304_m, 0.304_m),
-        frc::Translation2d(0.304_m, -0.304_m),
-        frc::Translation2d(-0.304_m, 0.304_m),
-        frc::Translation2d(-0.304_m, -0.304_m)
+        frc::Translation2d(-0.304_m, -0.304_m), //0
+        frc::Translation2d(-0.304_m, 0.304_m), //1
+        frc::Translation2d(0.304_m, -0.304_m), //2
+        frc::Translation2d(0.304_m, 0.304_m) //3
     };
 
     //SMC1
@@ -103,10 +103,10 @@ private:
         0, // steer encoder id
         0, // drive motor id
         1, // steer motor id
-        -0.1067_tr, // steer offset
+        -0.1067_tr + 0.5_tr, // steer offset
         false,  // drive motor invert
-        0.31,   // module position x
-        0.31    // module position y
+        -0.31,   // module position x
+        -0.31    // module position y
     );
 
     //SMC2
@@ -115,7 +115,7 @@ private:
         1, // steer encoder id
         2, // drive motor id
         3, // steer motor id
-        0.444336_tr, // steer offset
+        0.444336_tr + 0.5_tr, // steer offset
         true,  // drive motor invert
         0.31,   // module position x
         -0.31   // module position y
@@ -127,7 +127,7 @@ private:
         2, // steer encoder id
         4, // drive motor id
         5, // steer motor id
-        0.3276_tr, // steer offset
+        0.3276_tr + 0.5_tr, // steer offset
         false, // drive motor invert
         -0.31, // module position x
         0.31   // module position y
@@ -139,10 +139,10 @@ private:
         3, // steer encoder id
         6, // drive motor id
         7, // steer motor id
-        0.0703_tr,// steer offset
+        0.0703_tr + 0.5_tr,// steer offset
         true, // drive motor invert
-        -0.31, // module position x
-        -0.31  // module position y
+        0.31, // module position x
+        0.31  // module position y
     );
 
     wpi::array<SwerveModule*, 4> modules = 
