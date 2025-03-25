@@ -27,7 +27,7 @@ void Scheduler::execute()
 {
     log("Hello!");
     while(true) {
-        std::chrono::time_point<std::chrono::steady_clock> next_exec_time = std::chrono::steady_clock::now() + std::chrono::microseconds(1000);
+        std::chrono::time_point<std::chrono::steady_clock> next_exec_time = std::chrono::steady_clock::now() + std::chrono::microseconds(1750);
         for (Task *task : tasks)
         {
             if(stop_flag) {

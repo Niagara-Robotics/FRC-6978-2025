@@ -19,7 +19,7 @@ SwerveController::SwerveController(GlobalFaultManager *global_fm)
 }
 
 void SwerveController::schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) {
-    this->next_execution = current_time + std::chrono::microseconds(1700);
+    this->next_execution = current_time + std::chrono::microseconds(2000);
 }
 
 frc::SwerveDriveKinematics<4> SwerveController::get_kinematics() {

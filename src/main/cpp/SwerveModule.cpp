@@ -45,12 +45,15 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id): fa
     drive_position->SetUpdateFrequency(600_Hz, 2_s);
 
     drive_velocity = &drive_motor->GetVelocity();
-    drive_velocity->SetUpdateFrequency(600_Hz, 2_s);
+    drive_velocity->SetUpdateFrequency(250_Hz, 2_s);
 
     drive_control = new controls::VelocityVoltage(0_tps);
     drive_control->UpdateFreqHz = 0_Hz; //synchronous request
 
     drive_motor->SetControl(*drive_control);
+
+    drive_duty_cycle = &drive_motor->GetDutyCycle();
+    drive_duty_cycle->SetUpdateFrequency(10_Hz);
 
     drive_motor->OptimizeBusUtilization(0_Hz, 2_s);
 
@@ -77,7 +80,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig module_config, std::string id): fa
 
     steer_motor->SetControl(*steer_control);
 
-    steer_motor->OptimizeBusUtilization(50_Hz, 2_s);
+    steer_motor->OptimizeBusUtilization(0_Hz, 2_s);
 
     wheel_circumference = config.wheel_radius * M_PI * 2;
     std::cout << "wheel circumference " << wheel_circumference.value() << std::endl;
@@ -91,23 +94,7 @@ void SwerveModule::apply(frc::SwerveModuleState target_state)
     this->state = SMC_STATE_NORMAL;
     std::chrono::time_point<std::chrono::steady_clock> start_time = std::chrono::steady_clock::now();
 
-    if(!drive_motor->IsConnected()) {
-        fault_manager.add_fault(Fault(true, FaultIdentifier::driveMotorUnreachable));
-    } else {
-        fault_manager.clear_fault(Fault(true, FaultIdentifier::driveMotorUnreachable));
-    }
-
-    if(!steer_motor->IsConnected()) {
-        fault_manager.add_fault(Fault(true, FaultIdentifier::steerMotorUnreachable));
-    } else {
-        fault_manager.clear_fault(Fault(true, FaultIdentifier::steerMotorUnreachable));
-    }
-
-    if(!steering_encoder->IsConnected() || BaseStatusSignal::RefreshAll(*steering_position) != 0 || BaseStatusSignal::RefreshAll(*steering_velocity) != 0) {
-        fault_manager.add_fault(Fault(true, FaultIdentifier::steerEncoderUnreachable));
-    } else {
-        fault_manager.clear_fault(Fault(true, FaultIdentifier::steerEncoderUnreachable));
-    }
+    BaseStatusSignal::RefreshAll(*steering_position, *steering_velocity);
 
     target_state = frc::SwerveModuleState::Optimize(target_state, frc::Rotation2d(steering_position->GetValue()));
     //set the steering output 
@@ -180,6 +167,11 @@ void SwerveModule::idle() {
     }
     steer_motor->SetControl(ctre::phoenix6::controls::StaticBrake());
     drive_motor->SetControl(ctre::phoenix6::controls::StaticBrake());
+    
+    fault_manager.feed_watchdog();
+}
+
+void SwerveModule::fault_check() {
     if(!drive_motor->IsConnected()) {
         fault_manager.add_fault(Fault(true, FaultIdentifier::driveMotorUnreachable));
     } else {
@@ -197,7 +189,6 @@ void SwerveModule::idle() {
     } else {
         fault_manager.clear_fault(Fault(true, FaultIdentifier::steerEncoderUnreachable));
     }
-    fault_manager.feed_watchdog();
 }
 
 int SwerveModule::get_state() {
