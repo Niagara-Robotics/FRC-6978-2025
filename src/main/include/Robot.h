@@ -50,7 +50,8 @@ class Robot: frc::RobotBase {
         swerve_controller->twist_velocity_channel.get_handle(),
         lift.target_mechanism_state.get_handle(),
         &tracking,
-        swerve_controller
+        swerve_controller,
+        global_fault_manager
     );
 
     DriverInput driver_input = DriverInput(

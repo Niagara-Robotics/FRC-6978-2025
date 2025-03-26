@@ -20,10 +20,11 @@ AutoPilot::AutoPilot(controlchannel::ControlHandle<LateralSwerveRequest> planar_
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
         controlchannel::ControlHandle<LiftMechanismState> lift_handle,
         Tracking *tracking,
-        SwerveController *swerve_controller):
+        SwerveController *swerve_controller,
+        GlobalFaultManager *global_fm):
         planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), swerve_controller(swerve_controller), lift_handle(lift_handle)
 {   
-
+    global_fm->register_manager(&fault_manager);
     AutoBuilder::configure(
         (std::function<frc::Pose2d()>) [this, tracking](){ return tracking->get_pose(); }, // Robot pose supplier
         (std::function<void(const frc::Pose2d&)>) [this, tracking](frc::Pose2d pose){ tracking->reset_pose(pose); }, // Method to reset odometry (will be called if your auto has a starting pose)
@@ -103,13 +104,21 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
     frc::SmartDashboard::PutBoolean("auto_initialized", auto_initialized);
     auto alliance = frc::DriverStation::GetAlliance();
 
+    if(!alliance.has_value()) {
+        fault_manager.add_fault(Fault(false, FaultIdentifier::allianceUnavailable));
+    } else {
+        fault_manager.clear_fault(Fault(false, FaultIdentifier::allianceUnavailable));
+    }
+
     frc::Pose2d face_pose;
 
     reef_face_channel.take_control(0, false);
     if((int)reef_face_channel.get() < 0) reef_face_channel.set(0, (ReefFace)0);
     if((int)reef_face_channel.get() > 5) reef_face_channel.set(0, (ReefFace)5);
-    face_pose = (alliance.value() == frc::DriverStation::Alliance::kBlue)? blue_reef_centers[(int)reef_face_channel.get()]: red_reef_centers[(int)reef_face_channel.get()];
-
+    if(alliance.has_value())
+        face_pose = (alliance.value() == frc::DriverStation::Alliance::kBlue)? blue_reef_centers[(int)reef_face_channel.get()]: red_reef_centers[(int)reef_face_channel.get()];
+    else
+        face_pose = blue_reef_centers[(int)reef_face_channel.get()];
 
     switch (twist_mode_channel.get())
     {

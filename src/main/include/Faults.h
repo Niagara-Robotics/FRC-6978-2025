@@ -1,7 +1,8 @@
 #pragma once
 
 enum class FaultIdentifier {
-// note handler
+
+    allianceUnavailable = 400,
 
 // intake
     intakeRotateUnreachable = 300,

@@ -1,14 +1,15 @@
 #pragma once
 #include "Task.h"
-#include <frc/geometry/Pose2d.h>
 #include "ControlChannel.h"
 #include "SwerveController.h"
 #include "Tracking.h"
+#include "Lift.h"
+#include "FaultManager.h"
+
+#include <frc/geometry/Pose2d.h>
 #include <frc/smartdashboard/SmartDashboard.h>
 #include <frc/smartdashboard/SendableChooser.h>
 #include <frc2/command/Command.h>
-
-#include "Lift.h"
 
 #include <pathplanner/lib/auto/AutoBuilder.h>
 
@@ -96,6 +97,8 @@ private:
     bool auto_initialized = false;
     bool auto_running = false;
 
+    FaultManager fault_manager = FaultManager("AutoPilot");
+
 public:
     controlchannel::ControlChannel<AutoPilotTwistMode> twist_mode_channel = controlchannel::ControlChannel<AutoPilotTwistMode>(AutoPilotTwistMode::none);
     controlchannel::ControlChannel<AutoPilotTranslateMode> lateral_mode_channel = controlchannel::ControlChannel<AutoPilotTranslateMode>(AutoPilotTranslateMode::none);
@@ -113,7 +116,8 @@ public:
         controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle,
         controlchannel::ControlHandle<LiftMechanismState> lift_handle,
         Tracking *tracking,
-        SwerveController *swerve_controller);
+        SwerveController *swerve_controller,
+        GlobalFaultManager *global_fm);
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
     void call(bool robot_enabled, bool autonomous) override;
