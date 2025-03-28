@@ -245,7 +245,7 @@ void Lift::handle_mid() {
         target_lift_position = lift_intake_liftonly_clearance + 5_deg;
         target_shoulder_position = shoulder_intake_liftonly_clearance + 0_deg;
         target_twist_position = 0.5_tr;
-        gripper_control.Output = (gripper_coral)? 1_V : 0_V;
+        gripper_control.Output = (gripper_coral)? 0.5_V : 0_V;
         if(target_mechanism_state.has_control(0))
             target_mechanism_state.take_control(-1, true); //release
         if(target_place_position.has_control(0))

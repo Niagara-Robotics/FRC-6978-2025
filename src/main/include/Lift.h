@@ -72,7 +72,7 @@ private:
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
             .WithMotionMagicCruiseVelocity(5.0_tps)
-            .WithMotionMagicAcceleration(15_tr_per_s_sq)
+            .WithMotionMagicAcceleration(18_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
             .WithKP(40).WithKI(0).WithKD(0.1)
@@ -98,17 +98,17 @@ private:
     const units::angle::turn_t lift_algae_position = 3.15_tr;
 
     const units::angle::turn_t lift_place_positions[4] = {
-        2.05_tr,
-        2.05_tr,
-        2.05_tr,
+        1.98_tr,
+        1.98_tr,
+        1.98_tr,
         3.75_tr,
     };
 
     const units::angle::turn_t lift_algae_positions[4] = {
-        1.99_tr,
-        1.99_tr,
-        3.15_tr,
-        3.15_tr,
+        1.90_tr,
+        1.90_tr,
+        3.12_tr,
+        3.12_tr,
     };
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> lift_position = lift_motor.GetPosition();
@@ -126,8 +126,8 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(7.5_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-7.5_V)
+            .WithPeakForwardVoltage(8.5_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-8.5_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(30_A)
@@ -135,11 +135,11 @@ private:
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
             .WithMotionMagicCruiseVelocity(3.0_tps)
-            .WithMotionMagicAcceleration(3.2_tr_per_s_sq)
+            .WithMotionMagicAcceleration(3.6_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
-            .WithKP(60).WithKI(0).WithKD(0.1)
-            .WithKS(0.2).WithKV(1.5).WithKG(0.25).WithKA(0.06)
+            .WithKP(65).WithKI(0).WithKD(0.1)
+            .WithKS(0.2).WithKV(1.6).WithKG(0.25).WithKA(0.06)
             .WithGravityType(ctre::phoenix6::signals::GravityTypeValue::Elevator_Static)
         );
 
@@ -155,7 +155,7 @@ private:
     const units::angle::turn_t shoulder_level_position = 0.25_tr;
 
     const units::angle::turn_t shoulder_pick_position = 0.51_tr;
-    const units::angle::turn_t shoulder_place_position = 0.15_tr;
+    const units::angle::turn_t shoulder_place_position = 0.17_tr;
     const units::angle::turn_t shoulder_algae_position = 0.175_tr;
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> shoulder_motor_position = shoulder_motor.GetPosition();
@@ -182,20 +182,20 @@ private:
             .WithNeutralMode(ctre::phoenix6::signals::NeutralModeValue::Brake)
         )
         .WithVoltage(ctre::phoenix6::configs::VoltageConfigs()
-            .WithPeakForwardVoltage(3.2_V) //TODO: increase limits
-            .WithPeakReverseVoltage(-3.2_V)
+            .WithPeakForwardVoltage(10.2_V) //TODO: increase limits
+            .WithPeakReverseVoltage(-10.2_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
             .WithStatorCurrentLimit(12_A)
             .WithStatorCurrentLimitEnable(true)
         )
         .WithMotionMagic(ctre::phoenix6::configs::MotionMagicConfigs()
-            .WithMotionMagicCruiseVelocity(0.80_tps)
-            .WithMotionMagicAcceleration(2.0_tr_per_s_sq)
+            .WithMotionMagicCruiseVelocity(3.0_tps)
+            .WithMotionMagicAcceleration(10.0_tr_per_s_sq)
         )
         .WithSlot0(ctre::phoenix6::configs::Slot0Configs()
             .WithKP(80).WithKI(0).WithKD(0.1)
-            .WithKS(0.1).WithKV(0.6).WithKG(0.0).WithKA(0.1)
+            .WithKS(0.1).WithKV(1.0).WithKG(0.0).WithKA(0.1)
         );
 
     ctre::phoenix6::hardware::TalonFX gripper_motor = ctre::phoenix6::hardware::TalonFX(22, "rio");
@@ -210,7 +210,7 @@ private:
             .WithPeakReverseVoltage(-10_V)
         )
         .WithCurrentLimits(ctre::phoenix6::configs::CurrentLimitsConfigs()
-            .WithStatorCurrentLimit(16.5_A)
+            .WithStatorCurrentLimit(25.5_A)
             .WithStatorCurrentLimitEnable(true)
         );
 
