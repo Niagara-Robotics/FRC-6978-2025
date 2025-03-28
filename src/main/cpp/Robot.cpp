@@ -27,6 +27,12 @@ void Robot::StartCompetition() {
     HAL_ObserveUserProgramStarting();
     HAL_ObserveUserProgramDisabled();
     std::cout << "Tasks registered\n";
+
+    frc::DataLogManager::Start();
+    frc::DataLogManager::LogNetworkTables(true);
+
+    std::cout << "Started logging\n";
+
     while (true)
     {
         HAL_RefreshDSData();

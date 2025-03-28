@@ -8,6 +8,7 @@
 
 #include <frc/TimedRobot.h>
 #include <frc/smartdashboard/SendableChooser.h>
+#include <frc/DataLogManager.h>
 #include "Scheduler.h"
 #include "SwerveController.h"
 #include "GyroInput.h"

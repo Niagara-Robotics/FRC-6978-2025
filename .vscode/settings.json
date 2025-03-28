@@ -102,7 +102,11 @@
     "*.inc": "cpp",
     "__config": "cpp",
     "expected": "cpp",
-    "source_location": "cpp"
+    "source_location": "cpp",
+    "__hash_table": "cpp",
+    "__node_handle": "cpp",
+    "__split_buffer": "cpp",
+    "__tree": "cpp"
   },
   "C_Cpp.errorSquiggles": "enabled"
 }
