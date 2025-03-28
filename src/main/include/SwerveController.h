@@ -51,7 +51,7 @@ private:
 
     ctre::phoenix6::configs::Slot0Configs steer_clc_gains = ctre::phoenix6::configs::Slot0Configs()
         .WithKP(85.0).WithKI(0).WithKD(0)
-        .WithKS(0.0).WithKV(0.95).WithKA(0.0005);
+        .WithKS(0.05).WithKV(1.1).WithKA(0.0005);
 
     ctre::phoenix6::configs::CurrentLimitsConfigs drive_current_limits = ctre::phoenix6::configs::CurrentLimitsConfigs()
         .WithStatorCurrentLimitEnable(true)
@@ -100,7 +100,7 @@ private:
     //SMC1
     SwerveModuleConfig front_left_config = SwerveModuleConfig(
         &common_config,
-        0, // steer encoder id
+        4, // steer encoder id
         0, // drive motor id
         1, // steer motor id
         -0.1067_tr + 0.5_tr, // steer offset
