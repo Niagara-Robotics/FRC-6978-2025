@@ -20,11 +20,14 @@
 #define PS_OCI_SUBCLASS_TAG_DISTANCE 0x03
 #define PS_OCI_SUBCLASS_TAG_HEADING 0x05
 #define PS_OCI_SUBCLASS_TAG_ID 0x04
+#define PS_OCI_SUBCLASS_LATENCY 0x06
 
 #define PS_OTI_INTEGER 0x03
 #define PS_OTI_DOUBLE 0x04
 #define PS_OTI_2D_ROTATION 0x11
 #define PS_OTI_3D_POSITION 0x12
+
+#define TRACKING_BUFFER_CAP 256
 
 class SpeakerReport {
 public:
@@ -37,6 +40,22 @@ public:
     SpeakerReport(std::chrono::time_point<std::chrono::steady_clock> observation_time,
     units::length::meter_t distance,
     units::angle::radian_t heading): observation_time(observation_time), distance(distance), heading(heading) {};
+};
+
+class TrackingFrame {
+public:
+    frc::Rotation2d rotation_estimate;
+    frc::Rotation2d gyro_rotation;
+
+    wpi::array<frc::SwerveModulePosition, 4> module_positions;
+
+    frc::Pose2d estimated_pose;
+
+    std::chrono::time_point<std::chrono::steady_clock> observation_time;
+
+    TrackingFrame(frc::Rotation2d rotation_estimate, frc::Rotation2d gyro_rotation, frc::Pose2d estimated_pose, wpi::array<frc::SwerveModulePosition, 4> module_positions): rotation_estimate(rotation_estimate), gyro_rotation(gyro_rotation), estimated_pose(estimated_pose), module_positions(module_positions) {
+        observation_time = std::chrono::steady_clock::now();
+    }
 };
 
 class Tracking : public Task
@@ -70,6 +89,8 @@ private:
 
     nt::StructPublisher<frc::Pose2d> odometry_pose_publisher;
 
+    std::list<TrackingFrame> tracking_buffer = std::list<TrackingFrame>();
+
     SpeakerReport last_speaker_report;
 
     std::chrono::time_point<std::chrono::steady_clock> last_camera_pose_update;
@@ -77,9 +98,12 @@ private:
 
     std::chrono::time_point<std::chrono::steady_clock> last_sent_heartbeat;
     std::chrono::time_point<std::chrono::steady_clock> last_received_heartbeat;
+    std::chrono::milliseconds last_network_latency;
     void send_heartbeat();
 
     void drive_robot_relative(frc::ChassisSpeeds speeds);
+
+    void push_camera_update(bool rotation, frc::Pose2d pose, std::chrono::steady_clock::time_point exposure_timestamp);
 public:
     Tracking(SwerveController *swerve_controller);
 

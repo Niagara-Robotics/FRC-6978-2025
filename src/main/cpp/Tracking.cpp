@@ -61,6 +61,7 @@ void Tracking::handle_packet(char buf[256]) {
         //send heartbeat
         //printf("received heartbeat\n");
         last_received_heartbeat = std::chrono::steady_clock::now();
+        last_network_latency = std::chrono::duration_cast<std::chrono::milliseconds>(last_received_heartbeat - last_sent_heartbeat);
         frc::SmartDashboard::PutNumber("Vision Latency", std::chrono::duration_cast<std::chrono::microseconds>(last_received_heartbeat - last_sent_heartbeat).count());
         return;
     }
@@ -75,6 +76,7 @@ void Tracking::handle_packet(char buf[256]) {
     double distanceUsed = -1;
     int32_t tag_id = -1;
     double tag_heading;
+    int latency = 0;
 
     for(int obj = 0; obj < object_count; obj++) {
         if(buf[3+offset] == PS_OCI_CLASS_TRACKING && buf[3+offset+1] == PS_OCI_SUBCLASS_ROBOT_CAMERA_POSE) { //camera observed robot position
@@ -104,6 +106,11 @@ void Tracking::handle_packet(char buf[256]) {
                 memcpy(&tag_heading, buf+3+offset+3, sizeof(double));
                 offset+=8;
             }
+        } else if (buf[3+offset] == PS_OCI_CLASS_TRACKING && buf[3+offset+1] == PS_OCI_SUBCLASS_LATENCY) { //camera observed tag heading
+            if(buf[3+offset+2] == PS_OTI_INTEGER) {
+                memcpy(&latency, buf+3+offset+3, sizeof(int32_t));
+                offset+=4;
+            }
         }
         offset += 3;
     }
@@ -113,9 +120,11 @@ void Tracking::handle_packet(char buf[256]) {
     auto alliance = frc::DriverStation::GetAlliance();
     distanceUsed /= 1000.0;
     frc::SmartDashboard::PutBoolean("data_from_vision", true);
-
+    frc::SmartDashboard::PutNumber("Vision Processing Time", latency);
+    frc::SmartDashboard::PutNumber("Vision Composite Time", latency+last_network_latency.count());
     
     if(hasCamera && hasRotation) {
+        //printf("successfully decoded packet\n");
         //check distance threshold
         if(distanceUsed > 2.8) return;
         if(!camera_orientation_enabled) return;
@@ -126,13 +135,17 @@ void Tracking::handle_packet(char buf[256]) {
         //discriminate based on discrepancies in yaw angle        
         //if(!gyro_degraded && fabs(yaw - current_rotation_estimate.Radians().value()) > 0.07) return;
         last_camera_pose_update = std::chrono::steady_clock::now();
-        swerve_odometry->ResetPosition(frc::Rotation2d(current_rotation_estimate), swerve_controller->fetch_module_positions(), frc::Pose2d(frc::Translation2d(x * 1.0_mm, y * 1.0_mm), frc::Rotation2d(current_rotation_estimate)));
+        //swerve_odometry->ResetPosition(frc::Rotation2d(current_rotation_estimate), swerve_controller->fetch_module_positions(), frc::Pose2d(frc::Translation2d(x * 1.0_mm, y * 1.0_mm), frc::Rotation2d(current_rotation_estimate)));
         //check and update orientation
         if(distanceUsed < 1.9 && camera_orientation_enabled) {
             //update orientation
-            set_gyro_angle(yaw * 1.0_rad);
+            //set_gyro_angle(yaw * 1.0_rad);
             gyro_degraded = false;
             last_gyro_camera_sync = std::chrono::steady_clock::now();
+            push_camera_update(true, frc::Pose2d(frc::Translation2d(x*1.0_mm, y*1.0_mm), frc::Rotation2d(yaw*1.0_rad)), std::chrono::steady_clock::now() - (std::chrono::milliseconds(latency)+last_network_latency));
+
+        } else {
+            push_camera_update(false, frc::Pose2d(frc::Translation2d(x*1.0_mm, y*1.0_mm), frc::Rotation2d(yaw*1.0_rad)), std::chrono::steady_clock::now() - (std::chrono::milliseconds(latency)+last_network_latency));
         }
     }
 }
@@ -158,8 +171,43 @@ SpeakerReport Tracking::get_speaker_pose() {
     return last_speaker_report;
 }
 
+void Tracking::push_camera_update(bool affect_rotation, frc::Pose2d camera_pose, std::chrono::steady_clock::time_point exposure_timestamp) {
+    if(tracking_buffer.size() < 1) return;
+    TrackingFrame odometry_frame = tracking_buffer.front();
+    tracking_buffer.pop_front();
+    int i = 1;
+    while (odometry_frame.observation_time < exposure_timestamp) //until the odometry frame comes after the camera frame
+    {
+        if(tracking_buffer.size() < 1) break;
+        odometry_frame = tracking_buffer.front();
+        tracking_buffer.pop_front();
+        i++;
+    }
+    //printf("Fast-forwarding %i odometry frames\n", tracking_buffer.size());
+    //set the offset
+    
+    frc::Rotation2d temp_gyro_offset = camera_pose.Rotation() - odometry_frame.gyro_rotation;
+
+    if(affect_rotation)
+        swerve_odometry->ResetPosition(odometry_frame.gyro_rotation + temp_gyro_offset, odometry_frame.module_positions, camera_pose);
+    else 
+        swerve_odometry->ResetPosition(odometry_frame.rotation_estimate, odometry_frame.module_positions, frc::Pose2d(camera_pose.Translation(), odometry_frame.rotation_estimate));
+    while(tracking_buffer.size() > 0) {
+        odometry_frame = tracking_buffer.front();
+        tracking_buffer.pop_front();
+        
+        if(affect_rotation)
+            swerve_odometry->Update(odometry_frame.gyro_rotation + temp_gyro_offset, odometry_frame.module_positions);
+        else 
+            swerve_odometry->Update(odometry_frame.rotation_estimate, odometry_frame.module_positions);
+    }
+    if(affect_rotation) gyro_offset = temp_gyro_offset;
+}
+
 void Tracking::call(bool robot_enabled, bool autonomous) {
     update_orientation_estimate();
+
+    //printf("handling packets\n");
 
     char buf[256];
     if(recv(sockfd, buf, 256, MSG_DONTWAIT) > 0) {
@@ -168,7 +216,15 @@ void Tracking::call(bool robot_enabled, bool autonomous) {
 
     send_heartbeat();
 
-    swerve_odometry->Update(current_rotation_estimate, swerve_controller->fetch_module_positions());
+    wpi::array<frc::SwerveModulePosition, 4> module_positions = swerve_controller->fetch_module_positions();
+
+    swerve_odometry->Update(current_rotation_estimate, module_positions);
+    //printf("updateing trakcing buffer\n");
+    tracking_buffer.push_back(TrackingFrame(current_rotation_estimate, recent_gyro_pose, swerve_odometry->GetPose(), module_positions));
+    if(tracking_buffer.size() > TRACKING_BUFFER_CAP) {
+        tracking_buffer.pop_front();
+    }
+
     odometry_pose_publisher.Set(swerve_odometry->GetPose());
     swerve_controller->set_chassis_rotation(swerve_odometry->GetPose().Rotation());
 
