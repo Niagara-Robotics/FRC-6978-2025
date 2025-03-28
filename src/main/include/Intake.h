@@ -80,8 +80,8 @@ private:
 
     const units::angle::turn_t rotate_physical_stop_position = -0.37_tr;
     const units::angle::turn_t rotate_maximum_extent = 0.027_tr;
-    const units::angle::turn_t rotate_lift_clearance_position = -0.275_tr;
-    const units::angle::turn_t rotate_bay_clearance_position = -0.18_tr;
+    const units::angle::turn_t rotate_lift_clearance_position = -0.285_tr;
+    const units::angle::turn_t rotate_bay_clearance_position = -0.19_tr;
 
     const units::angle::turn_t algae_pickup_position = -0.11_tr;
     const units::angle::turn_t algae_hold_position = -0.205_tr;
