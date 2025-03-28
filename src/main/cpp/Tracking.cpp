@@ -120,8 +120,8 @@ void Tracking::handle_packet(char buf[256]) {
     auto alliance = frc::DriverStation::GetAlliance();
     distanceUsed /= 1000.0;
     frc::SmartDashboard::PutBoolean("data_from_vision", true);
-    frc::SmartDashboard::PutNumber("Vision Processing Time", latency);
-    frc::SmartDashboard::PutNumber("Vision Composite Time", latency+last_network_latency.count());
+    ui_table->PutNumber("Vision Processing Time", latency);
+    ui_table->PutNumber("Vision Composite Time", latency+last_network_latency.count());
     
     if(hasCamera && hasRotation) {
         //printf("successfully decoded packet\n");
@@ -207,7 +207,7 @@ void Tracking::push_camera_update(bool affect_rotation, frc::Pose2d camera_pose,
 void Tracking::call(bool robot_enabled, bool autonomous) {
     update_orientation_estimate();
 
-    //printf("handling packets\n");
+    frc::SmartDashboard::PutBoolean("Vision Tracking", (std::chrono::steady_clock::now() - last_camera_pose_update) < std::chrono::milliseconds(60));
 
     char buf[256];
     if(recv(sockfd, buf, 256, MSG_DONTWAIT) > 0) {

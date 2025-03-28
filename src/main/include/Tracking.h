@@ -99,6 +99,9 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> last_sent_heartbeat;
     std::chrono::time_point<std::chrono::steady_clock> last_received_heartbeat;
     std::chrono::milliseconds last_network_latency;
+
+    std::shared_ptr<nt::NetworkTable> ui_table = nt::NetworkTableInstance(nt::GetDefaultInstance()).GetTable("tracking");
+
     void send_heartbeat();
 
     void drive_robot_relative(frc::ChassisSpeeds speeds);
