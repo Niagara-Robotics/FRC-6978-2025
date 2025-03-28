@@ -395,6 +395,10 @@ void Lift::handle_algae() {
     }
 }
 
+LiftDetailedState Lift::get_state() {
+    return detailed_state;
+}
+
 void Lift::call(bool robot_enabled, bool autonomous) {
 
     ctre::phoenix6::BaseStatusSignal::RefreshAll(shoulder_motor_position, lift_position/*, shoulder_encoder_position*/);

@@ -50,6 +50,41 @@ enum class ReefTree {
     right
 };
 
+class LiftMidCommand: public frc2::CommandHelper<frc2::Command, LiftMidCommand> {
+    Lift *lift;
+
+    controlchannel::ControlHandle<LiftMechanismState> action_handle;
+
+public:
+    LiftMidCommand(Lift *lift): 
+        lift(lift), 
+        action_handle(lift->target_mechanism_state.get_handle()){};
+
+    void Initialize() override;
+    void Execute() override;
+    void End(bool interrupted) override;
+    bool IsFinished() override;
+};
+
+class L4PlaceCommand: public frc2::CommandHelper<frc2::Command, L4PlaceCommand> {
+    Lift *lift;
+
+    controlchannel::ControlHandle<LiftMechanismState> action_handle;
+    controlchannel::ControlHandle<int> level_handle;
+
+public:
+    L4PlaceCommand(Lift *lift): 
+        lift(lift), 
+        action_handle(lift->target_mechanism_state.get_handle()),
+        level_handle(lift->target_place_position.get_handle()){};
+
+
+    void Initialize() override;
+    void Execute() override;
+    void End(bool interrupted) override;
+    bool IsFinished() override;
+};
+
 class AutoPilot: public Task, frc2::Subsystem
 {
 private:
@@ -62,13 +97,14 @@ private:
 
     Tracking *tracking;
     SwerveController *swerve_controller;
+    Lift *lift;
 
     LateralSwerveRequest point_proportional(frc::Pose2d target, frc::Pose2d current);
 
     units::angular_velocity::radians_per_second_t heading_proportional(units::angle::radian_t target, units::angle::radian_t current);
     frc2::Subsystem subsystem = frc2::Subsystem();
 
-    frc::SendableChooser<frc2::CommandPtr*> auto_chooser;
+    frc::SendableChooser<frc2::Command*> auto_chooser;
     frc2::Command *current_auto_command;
 
     std::chrono::time_point<std::chrono::steady_clock> auto_start;
@@ -117,6 +153,7 @@ public:
         controlchannel::ControlHandle<LiftMechanismState> lift_handle,
         Tracking *tracking,
         SwerveController *swerve_controller,
+        Lift *lift,
         GlobalFaultManager *global_fm);
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;

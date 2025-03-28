@@ -21,22 +21,31 @@ AutoPilot::AutoPilot(controlchannel::ControlHandle<LateralSwerveRequest> planar_
         controlchannel::ControlHandle<LiftMechanismState> lift_handle,
         Tracking *tracking,
         SwerveController *swerve_controller,
+        Lift *lift,
         GlobalFaultManager *global_fm):
-        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), swerve_controller(swerve_controller), lift_handle(lift_handle)
+        planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), swerve_controller(swerve_controller), lift_handle(lift_handle),
+        lift(lift)
 {   
+    frc::SmartDashboard::PutNumber("fieldResetOffsetX", 0.0);
+    frc::SmartDashboard::PutNumber("fieldResetOffsetY", 0.0);
     global_fm->register_manager(&fault_manager);
+
+    RobotConfig config;
+    config = RobotConfig::fromGUISettings();
+    
+
     AutoBuilder::configure(
         (std::function<frc::Pose2d()>) [this, tracking](){ return tracking->get_pose(); }, // Robot pose supplier
-        (std::function<void(const frc::Pose2d&)>) [this, tracking](frc::Pose2d pose){ tracking->reset_pose(pose); }, // Method to reset odometry (will be called if your auto has a starting pose)
+        (std::function<void(const frc::Pose2d&)>) [this, tracking](frc::Pose2d pose){ tracking->reset_pose(
+                frc::Pose2d(frc::Translation2d(frc::SmartDashboard::GetNumber("fieldResetOffsetX", 0.0)*1.0_m, frc::SmartDashboard::GetNumber("fieldResetOffsetY", 0.0)*1.0_m) + pose.Translation(), pose.Rotation())
+            ); }, // Method to reset odometry (will be called if your auto has a starting pose)
         (std::function<frc::ChassisSpeeds()>) [this, tracking](){ return tracking->get_chassis_speeds(); }, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
         (std::function<void(const frc::ChassisSpeeds&)>) [this, twist_handle, planar_handle](auto speeds){ drive_robot_relative(speeds); }, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
         std::shared_ptr<pathplanner::PPHolonomicDriveController>(new pathplanner::PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
             PIDConstants(2.5, 0.0, 0.0), // Translation PID constants
             PIDConstants(2.0, 0.0, 0.0), 0.004_s // Rotation PID constants
         )),
-        RobotConfig(52_kg, 10_kg_sq_m,
-			ModuleConfig(4_in, 5_mps, 1.0, frc::DCMotor(12_V, 4.6_Nm, 260_A, 1.5_A, 628_rad_per_s, 1), 40_A,1), 
-            swerve_controller->fetch_module_offsets()),
+        config,
         (std::function<bool()>) []() {
             // Boolean supplier that controls when the path will be mirrored for the red alliance
             // This will flip the path being followed to the red side of the field.
@@ -44,12 +53,18 @@ AutoPilot::AutoPilot(controlchannel::ControlHandle<LateralSwerveRequest> planar_
 
             auto alliance = frc::DriverStation::GetAlliance();
             if (alliance) {
-                return alliance.value() == frc::DriverStation::Alliance::kBlue;
+                return alliance.value() == frc::DriverStation::Alliance::kRed;
             }
             return false;
         },
         this // Reference to this subsystem to set requirements
     );
+
+    NamedCommands::registerCommand("L4Place", std::make_unique<L4PlaceCommand>(lift));
+    NamedCommands::registerCommand("LiftMid", std::make_unique<LiftMidCommand>(lift));
+
+    auto_chooser = AutoBuilder::buildAutoChooser();
+    frc::SmartDashboard::PutData("Auto Chooser", &auto_chooser);
 }
 
 void AutoPilot::drive_robot_relative(frc::ChassisSpeeds speeds) {
@@ -60,7 +75,8 @@ void AutoPilot::drive_robot_relative(frc::ChassisSpeeds speeds) {
     twist_mode_channel.set(0, AutoPilotTwistMode::planner);
 
     twist_handle.set(speeds.omega);
-    planar_handle.set(LateralSwerveRequest(speeds.vx, speeds.vy, SwerveRequestType::full));
+    planar_handle.set(LateralSwerveRequest(speeds.vx, speeds.vy, SwerveRequestType::full_robot_relative));
+    printf("driving robot relative %f %f\n", speeds.vx.value(), speeds.vy.value());
 }
 
 units::angular_velocity::radians_per_second_t AutoPilot::heading_proportional(units::angle::radian_t target, units::angle::radian_t current) {
@@ -184,21 +200,35 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
             auto_running = true;
             auto_initialized = true;
             planar_handle.try_take_control();
+            twist_handle.try_take_control();
+            /*planar_handle.try_take_control();
             planar_handle.set(LateralSwerveRequest(0.5_mps, 0.0_mps, SwerveRequestType::full_robot_relative));
             auto_start = std::chrono::steady_clock::now();
             lift_handle.try_take_control();
-            lift_handle.set(LiftMechanismState::mid);
+            lift_handle.set(LiftMechanismState::mid);*/
+            auto_chooser.GetSelected()->Initialize();
+        }
+        if(auto_running) {
+            printf("executing auto\n");
+            auto_chooser.GetSelected()->Execute();
         }
 
-        if(std::chrono::steady_clock::now() - auto_start > std::chrono::milliseconds(2500) && auto_running) {
-            planar_handle.release();
+        if(auto_chooser.GetSelected()->IsFinished()) {
+            printf("Gracefully cancelling auto\n");
+            auto_chooser.GetSelected()->End(false);
             auto_running = false;
         }
+
+        /*if(std::chrono::steady_clock::now() - auto_start > std::chrono::milliseconds(2500) && auto_running) {
+            planar_handle.release();
+            auto_running = false;
+        }*/
 
         return;
     } else if(auto_running) {
         auto_running = false;
         planar_handle.release();
+        auto_chooser.GetSelected()->End(true);
     }
 }
 

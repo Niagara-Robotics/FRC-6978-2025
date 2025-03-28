@@ -266,6 +266,7 @@ public:
 
     controlchannel::ControlChannel<int> target_place_position = controlchannel::ControlChannel<int>(3);
 
+    LiftDetailedState get_state();
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
     void call(bool robot_enabled, bool autonomous) override;

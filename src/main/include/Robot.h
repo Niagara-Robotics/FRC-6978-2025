@@ -51,6 +51,7 @@ class Robot: frc::RobotBase {
         lift.target_mechanism_state.get_handle(),
         &tracking,
         swerve_controller,
+        &lift,
         global_fault_manager
     );
 
