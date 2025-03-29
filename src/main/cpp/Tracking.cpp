@@ -61,7 +61,7 @@ void Tracking::handle_packet(char buf[256]) {
         //send heartbeat
         //printf("received heartbeat\n");
         last_received_heartbeat = std::chrono::steady_clock::now();
-        last_network_latency = std::chrono::duration_cast<std::chrono::milliseconds>(last_received_heartbeat - last_sent_heartbeat);
+        last_network_latency = std::chrono::duration_cast<std::chrono::milliseconds>((last_received_heartbeat - last_sent_heartbeat)/2);
         frc::SmartDashboard::PutNumber("Vision Latency", std::chrono::duration_cast<std::chrono::microseconds>(last_received_heartbeat - last_sent_heartbeat).count());
         return;
     }
