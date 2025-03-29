@@ -31,11 +31,14 @@ void Robot::StartCompetition() {
     frc::DataLogManager::Start();
     frc::DataLogManager::LogNetworkTables(true);
 
+    frc::DriverStation::StartDataLog(frc::DataLogManager::GetLog());
+
     std::cout << "Started logging\n";
 
     while (true)
     {
         HAL_RefreshDSData();
+        frc::DriverStation::RefreshData();
         HAL_ControlWord word;
         HAL_GetControlWord(&word);
         bool enabled = word.enabled;
@@ -53,11 +56,15 @@ void Robot::StartCompetition() {
 
         frc::SmartDashboard::UpdateValues();
         nt::NetworkTableInstance(nt::GetDefaultInstance()).Flush();
+        
         usleep(12000);
         if(should_exit) {
             break;
         }
     }
+
+    frc::DataLogManager::Stop();
+
     drive_scheduler->~Scheduler();
     tracking_scheduler->~Scheduler();
     input_scheduler->~Scheduler();
