@@ -77,6 +77,10 @@ public:
     void release() {
         parent->release(id);
     }
+
+    bool has_control() {
+        return parent->has_control(id);
+    }
     
     bool try_take_control() {
         return parent->take_control(id, true);
