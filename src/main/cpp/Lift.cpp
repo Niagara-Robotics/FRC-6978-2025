@@ -483,7 +483,7 @@ void Lift::call(bool robot_enabled, bool autonomous) {
         frc::SmartDashboard::PutNumber("gripper_distance", gripper_sensor.get_measurement().value().distance_mm);
         frc::SmartDashboard::PutNumber("gripper_ambient", gripper_sensor.get_measurement().value().ambient);
         gripper_coral = (gripper_sensor.get_measurement().value().status == grpl::LASERCAN_STATUS_VALID_MEASUREMENT &&
-            gripper_sensor.get_measurement().value().ambient < 32 && gripper_sensor.get_measurement().value().distance_mm < gripper_coral_threshold);
+            gripper_sensor.get_measurement().value().ambient < 64 && gripper_sensor.get_measurement().value().distance_mm < gripper_coral_threshold);
         frc::SmartDashboard::PutBoolean("gripper_coral", gripper_coral);
     } else if(HAL_GetRuntimeType() == HAL_RuntimeType::HAL_Runtime_Simulation) {
         frc::SmartDashboard::PutNumber("gripper_distance", 76);
