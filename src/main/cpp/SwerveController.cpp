@@ -11,7 +11,7 @@
 
 SwerveController::SwerveController(GlobalFaultManager *global_fm)
 {
-    module_positions_publisher = nt::StructArrayTopic<frc::SwerveModulePosition>(nt::GetTopic(nt::GetDefaultInstance(), "swerve/module_positions")).Publish();
+    module_positions_publisher = nt::StructArrayTopic<frc::SwerveModulePosition>(nt::GetTopic(nt::GetDefaultInstance(), "/swerve/module_positions")).Publish();
     for (size_t i = 0; i < 4; i++) {
         global_fm->register_manager(&modules[i]->fault_manager);
     }

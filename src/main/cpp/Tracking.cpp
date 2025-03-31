@@ -9,7 +9,7 @@ Tracking::Tracking(SwerveController *swerve_controller):
     swerve_controller(swerve_controller)
 {
     swerve_odometry = new frc::SwerveDriveOdometry<4>(swerve_controller->get_kinematics(), frc::Rotation2d(), swerve_controller->fetch_module_positions());
-    odometry_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "tracking/odometry_pose")).Publish();
+    odometry_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "/tracking/odometry_pose")).Publish();
     mxp = new studica::AHRS(studica::AHRS::kMXP_SPI, 200);
     mxp->ZeroYaw();
 
