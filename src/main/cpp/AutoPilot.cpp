@@ -24,10 +24,16 @@ AutoPilot::AutoPilot(controlchannel::ControlHandle<LateralSwerveRequest> planar_
         Lift *lift,
         GlobalFaultManager *global_fm):
         planar_handle(planar_handle), twist_handle(twist_handle), tracking(tracking), swerve_controller(swerve_controller), lift_handle(lift_handle),
-        lift(lift)
+        lift(lift),
+        vision_mask_handle(tracking->mask_vision_channel.get_handle())
 {   
     frc::SmartDashboard::PutNumber("fieldResetOffsetX", 0.0);
     frc::SmartDashboard::PutNumber("fieldResetOffsetY", 0.0);
+
+    target_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "/autopilot/target_pose")).Publish();
+
+    frc::SmartDashboard::PutNumber("whiskerDistance", whisker_clear_distance.value());
+    frc::SmartDashboard::PutNumber("whiskerStrafe", whisker_strafe_distance.value());
     global_fm->register_manager(&fault_manager);
 
     RobotConfig config;
@@ -62,6 +68,8 @@ AutoPilot::AutoPilot(controlchannel::ControlHandle<LateralSwerveRequest> planar_
 
     NamedCommands::registerCommand("L4Place", std::make_unique<L4PlaceCommand>(lift));
     NamedCommands::registerCommand("LiftMid", std::make_unique<LiftMidCommand>(lift));
+    NamedCommands::registerCommand("UnmaskVision", std::make_unique<UnmaskVisionCommand>(tracking));
+    NamedCommands::registerCommand("AutoAlignLeft", std::make_unique<AutoAlignLeftCommand>(this));
 
     auto_chooser = AutoBuilder::buildAutoChooser();
     frc::SmartDashboard::PutData("Auto Chooser", &auto_chooser);
@@ -76,7 +84,6 @@ void AutoPilot::drive_robot_relative(frc::ChassisSpeeds speeds) {
 
     twist_handle.set(speeds.omega);
     planar_handle.set(LateralSwerveRequest(speeds.vx, speeds.vy, SwerveRequestType::full_robot_relative));
-    printf("driving robot relative %f %f\n", speeds.vx.value(), speeds.vy.value());
 }
 
 units::angular_velocity::radians_per_second_t AutoPilot::heading_proportional(units::angle::radian_t target, units::angle::radian_t current) {
@@ -95,9 +102,9 @@ LateralSwerveRequest AutoPilot::point_proportional(frc::Pose2d target, frc::Pose
     units::meter_t deltaX = (target.X() - current.X());
     units::meter_t deltaY = (target.Y() - current.Y());
 
-    units::meters_per_second_t xOut = deltaX * (7.5_mps / 1_m);
+    units::meters_per_second_t xOut = deltaX * (8.0_mps / 1_m);
 
-    units::meters_per_second_t yOut = deltaY * (7.5_mps / 1_m);
+    units::meters_per_second_t yOut = deltaY * (8.0_mps / 1_m);
 
     units::meters_per_second_t max = 1.0_mps;
 
@@ -115,10 +122,26 @@ LateralSwerveRequest AutoPilot::point_proportional(frc::Pose2d target, frc::Pose
     return LateralSwerveRequest(xOut, yOut, SwerveRequestType::full);
 }
 
+bool AutoPilot::is_finished() {
+ 
+    switch (lateral_mode_channel.get())
+    {
+    case AutoPilotTranslateMode::reef:
+        
+        
+        return delta < 0.5;
+    
+    default:
+        break;
+    }
+}
+
 void AutoPilot::call(bool robot_enabled, bool autonomous) {
     frc::SmartDashboard::PutBoolean("auto_running", auto_running);
     frc::SmartDashboard::PutBoolean("auto_initialized", auto_initialized);
     auto alliance = frc::DriverStation::GetAlliance();
+
+    frc::SmartDashboard::PutNumber("autopilot_delta", delta);
 
     if(!alliance.has_value()) {
         fault_manager.add_fault(Fault(false, FaultIdentifier::allianceUnavailable));
@@ -128,13 +151,44 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
 
     frc::Pose2d face_pose;
 
+
+    whisker_clear_distance = frc::SmartDashboard::GetNumber("whiskerDistance", whisker_clear_distance.value()) * 1_m;
+    whisker_strafe_distance = frc::SmartDashboard::GetNumber("whiskerStrafe", whisker_strafe_distance.value()) * 1_m;
+
+    side_offset = frc::SmartDashboard::GetNumber("coralSideOffset", whisker_strafe_distance.value()) * 1_m;
+
+
+    if(lateral_mode_channel.get() != AutoPilotTranslateMode::reef && reef_face_channel.has_control(-1) && alliance.has_value()) {
+        double closest_distance = 50000.0;
+        int closest_id = -1;
+        for(int i = 0; i < 6; i++) {
+            frc::Pose2d face2_pose = (alliance.value() == frc::DriverStation::Alliance::kBlue)? blue_reef_centers[i]: red_reef_centers[i];
+            double distance = sqrt(pow(tracking->get_pose().X().value() - face2_pose.X().value(), 2) + pow(tracking->get_pose().Y().value() - face2_pose.Y().value(), 2));
+            //printf("New closest %i %f\n", i, distance);
+
+            if(distance < closest_distance){
+                closest_distance = distance;
+                
+                closest_id = i;
+            }
+        }
+        reef_face_channel.take_control(0, true);
+        reef_face_channel.set(0, (ReefFace)closest_id);
+    }
+
     reef_face_channel.take_control(0, false);
     if((int)reef_face_channel.get() < 0) reef_face_channel.set(0, (ReefFace)0);
     if((int)reef_face_channel.get() > 5) reef_face_channel.set(0, (ReefFace)5);
+    
     if(alliance.has_value())
         face_pose = (alliance.value() == frc::DriverStation::Alliance::kBlue)? blue_reef_centers[(int)reef_face_channel.get()]: red_reef_centers[(int)reef_face_channel.get()];
     else
         face_pose = blue_reef_centers[(int)reef_face_channel.get()];
+
+    frc::SmartDashboard::PutNumber("Reef Face",(int)reef_face_channel.get());
+    frc::SmartDashboard::PutNumber("Reef Tree",(int)reef_tree_channel.get());
+
+    reef_face_channel.release(0);
 
     switch (twist_mode_channel.get())
     {
@@ -153,8 +207,10 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
         break;
     }
     case AutoPilotTwistMode::reef: {
+
         twist_handle.try_take_control();
         twist_handle.set(heading_proportional(face_pose.Rotation().Radians() - 180_deg, tracking->get_pose().Rotation().Radians()));
+        delta = sqrt(pow(fabs(tracking->get_pose().X().value() - face_pose.X().value()),2) + pow(fabs(tracking->get_pose().Y().value() - face_pose.Y().value()), 2));
         break;
     }
     
@@ -169,22 +225,52 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
     
     frc::Translation2d final_translation;
 
+    if(lateral_mode_channel.get() != last_lateral_mode && lateral_mode_channel.get()  != AutoPilotTranslateMode::none)
+        planar_handle.try_take_control();
+    
+    last_lateral_mode = lateral_mode_channel.get();
+
     switch (lateral_mode_channel.get())
     {
     case AutoPilotTranslateMode::none:
         planar_handle.release();
+        if(vision_mask_handle.has_control()){
+            vision_mask_handle.set(false);
+            vision_mask_handle.release();
+        }
         break;
     case AutoPilotTranslateMode::reef:
         //calculate the position
         final_translation = face_pose.Translation() + frc::Translation2d(whisker_clear_distance, 0_m).RotateBy(face_pose.Rotation());
-        final_translation = final_translation + frc::Translation2d(0_m, ((int)reef_tree_channel.get()>0)? whisker_strafe_distance: -whisker_strafe_distance).RotateBy(face_pose.Rotation());
+        final_translation = final_translation + frc::Translation2d(0_m, (((int)reef_tree_channel.get()>0)? whisker_strafe_distance: -whisker_strafe_distance) - 2_in).RotateBy(face_pose.Rotation());
+
+        frc::SmartDashboard::PutNumber("whiskerPoseX", final_translation.X().value());
+        frc::SmartDashboard::PutNumber("whiskerPoseY", final_translation.Y().value());
+
+        target_pose_publisher.Set(frc::Pose2d(final_translation, face_pose.Rotation()));
+
+        reef_face_channel.take_control(0, true);
+        
+        planar_handle.set(point_proportional(frc::Pose2d(final_translation, frc::Rotation2d()), tracking->get_pose()));
+        if(!autonomous) {
+            vision_mask_handle.try_take_control();
+            vision_mask_handle.set(true);
+        }
+        break;
+
+    case AutoPilotTranslateMode::reef_long:
+        //calculate the position
+        final_translation = face_pose.Translation() + frc::Translation2d(whisker_clear_distance, 0_m).RotateBy(face_pose.Rotation());
+        final_translation = final_translation + frc::Translation2d(0_m, (((int)reef_tree_channel.get()>0)? whisker_strafe_distance: -whisker_strafe_distance) - 2_in).RotateBy(face_pose.Rotation());
 
         frc::SmartDashboard::PutNumber("whiskerPoseX", final_translation.X().value());
         frc::SmartDashboard::PutNumber("whiskerPoseY", final_translation.Y().value());
 
         reef_face_channel.take_control(0, true);
-        planar_handle.try_take_control();
+        
         planar_handle.set(point_proportional(frc::Pose2d(final_translation, frc::Rotation2d()), tracking->get_pose()));
+        //vision_mask_handle.try_take_control();
+        //vision_mask_handle.set(true);
         break;
     default:
         break;
@@ -217,6 +303,9 @@ void AutoPilot::call(bool robot_enabled, bool autonomous) {
             printf("Gracefully cancelling auto\n");
             auto_chooser.GetSelected()->End(false);
             auto_running = false;
+            vision_mask_handle.try_take_control();
+            vision_mask_handle.set(false);
+            vision_mask_handle.release();
         }
 
         /*if(std::chrono::steady_clock::now() - auto_start > std::chrono::milliseconds(2500) && auto_running) {

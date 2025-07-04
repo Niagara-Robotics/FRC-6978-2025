@@ -1,0 +1,43 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "LiftMid"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "straight"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "UnmaskVision"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoAlignLeft"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "L4Place"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

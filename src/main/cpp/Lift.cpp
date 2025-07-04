@@ -351,6 +351,7 @@ void Lift::handle_place() {
         lateral_drive_handle.set(LateralSwerveRequest(-0.55_mps, 0_mps, SwerveRequestType::full_robot_relative));
         if(!gripper_coral && std::chrono::steady_clock::now() - eject_start > std::chrono::milliseconds(500)) 
         {
+            coral_eject_count++;
             target_mechanism_state.take_control(0, false);
             target_mechanism_state.set(0, LiftMechanismState::mid);
         }
@@ -536,10 +537,11 @@ void Lift::call(bool robot_enabled, bool autonomous) {
 
     ui_table.get()->PutNumber("shoulder/calibration_state", (int)rotate_calibration_state);
     ui_table.get()->PutNumber("shoulder/target_position", shoulder_control.Position.value());
-    ui_table.get()->PutNumber("shoulder/encoder_position", shoulder_encoder_position.GetValueAsDouble());
+    ui_table.get()->PutNumber("shoulder/encoder_position", shoulder_motor_position.GetValueAsDouble());
     ui_table.get()->PutNumber("lift/position", lift_position.GetValueAsDouble());
     ui_table.get()->PutNumber("lift/target_position", lift_control.Position.value());
-    
+    ui_table.get()->PutNumber("coral_eject_count", coral_eject_count);
+
     fault_manager.feed_watchdog();
 }
 

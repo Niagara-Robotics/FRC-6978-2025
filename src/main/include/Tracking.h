@@ -6,6 +6,7 @@
 #include <networktables/NetworkTable.h>
 #include <networktables/StructArrayTopic.h>
 #include <networktables/StructTopic.h>
+#include <frc/estimator/KalmanFilter.h>
 
 #include <unistd.h>
 #include <sys/socket.h>
@@ -26,6 +27,7 @@
 #define PS_OTI_DOUBLE 0x04
 #define PS_OTI_2D_ROTATION 0x11
 #define PS_OTI_3D_POSITION 0x12
+#define PS_OTI_3D_EULER 0x13
 
 #define TRACKING_BUFFER_CAP 256
 
@@ -88,7 +90,35 @@ private:
     frc::SwerveDriveOdometry<4> *swerve_odometry;
 
     nt::StructPublisher<frc::Pose2d> odometry_pose_publisher;
+    nt::StructPublisher<frc::Pose2d> camera_pose_publisher;
+    nt::StructPublisher<frc::Pose2d> tag_pose_publisher;
 
+    frc::Pose2d field_map[22] = {
+        frc::Pose2d(frc::Translation2d(657.37_in, 25.8_in), frc::Rotation2d(126_deg)),
+        frc::Pose2d(frc::Translation2d(657.37_in, 291.2_in), frc::Rotation2d(234_deg)),
+        frc::Pose2d(frc::Translation2d(455_in, 317.15_in), frc::Rotation2d(270_deg)),
+        frc::Pose2d(frc::Translation2d(365.2_in, 241.64_in), frc::Rotation2d(0_deg)),
+        frc::Pose2d(frc::Translation2d(365.2_in, 75.39_in), frc::Rotation2d(0_deg)),
+        frc::Pose2d(frc::Translation2d(530.49_in, 130.17_in), frc::Rotation2d(300_deg)), //6
+        frc::Pose2d(frc::Translation2d(546.87_in, 158.5_in), frc::Rotation2d(0_deg)), //7
+        frc::Pose2d(frc::Translation2d(530.49_in, 186.83_in), frc::Rotation2d(60_deg)), // 8
+        frc::Pose2d(frc::Translation2d(497.77_in, 186.83_in), frc::Rotation2d(120_deg)),
+        frc::Pose2d(frc::Translation2d(481.39_in, 158.5_in), frc::Rotation2d(180_deg)), //10
+        frc::Pose2d(frc::Translation2d(497.77_in, 130.17_in), frc::Rotation2d(240_deg)),
+        frc::Pose2d(frc::Translation2d(33.51_in, 25.8_in), frc::Rotation2d(54_deg)), //12
+        frc::Pose2d(frc::Translation2d(33.51_in, 291.2_in), frc::Rotation2d(306_deg)),
+        frc::Pose2d(frc::Translation2d(325.68_in, 241.64_in), frc::Rotation2d(180_deg)), //14
+        frc::Pose2d(frc::Translation2d(325.68_in, 75.39_in), frc::Rotation2d(180_deg)),
+        frc::Pose2d(frc::Translation2d(235.73_in, -0.15_in), frc::Rotation2d(90_deg)), //16
+        frc::Pose2d(frc::Translation2d(160.39_in, 130.17_in), frc::Rotation2d(240_deg)),
+        frc::Pose2d(frc::Translation2d(144.0_in, 158.5_in), frc::Rotation2d(180_deg)), //18
+        frc::Pose2d(frc::Translation2d(160.39_in, 186.83_in), frc::Rotation2d(120_deg)),
+        frc::Pose2d(frc::Translation2d(193.1_in, 186.83_in), frc::Rotation2d(60_deg)), //20
+        frc::Pose2d(frc::Translation2d(209.49_in, 158.5_in), frc::Rotation2d(0_deg)),
+        frc::Pose2d(frc::Translation2d(192.1_in, 130.17_in), frc::Rotation2d(300_deg)) //22
+    };
+
+    //frc::KalmanFilter filter = frc::KalmanFilter();
     std::list<TrackingFrame> tracking_buffer = std::list<TrackingFrame>();
 
     SpeakerReport last_speaker_report;
@@ -109,6 +139,8 @@ private:
     void push_camera_update(bool rotation, frc::Pose2d pose, std::chrono::steady_clock::time_point exposure_timestamp);
 public:
     Tracking(SwerveController *swerve_controller);
+
+    controlchannel::ControlChannel<bool> mask_vision_channel = controlchannel::ControlChannel<bool>(true);
 
     void schedule_next(std::chrono::time_point<std::chrono::steady_clock> current_time) override;
     void call(bool robot_enabled, bool autonomous) override;

@@ -45,6 +45,8 @@ private:
 
     bool enabled = false;
 
+    bool skip_safety = false;
+
     ctre::phoenix6::configs::Slot0Configs drive_clc_gains = ctre::phoenix6::configs::Slot0Configs()
         .WithKP(0.09).WithKI(0).WithKD(0)
         .WithKS(0.14).WithKV(0.103).WithKA(0.0015);

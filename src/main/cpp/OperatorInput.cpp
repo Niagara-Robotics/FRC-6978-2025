@@ -53,11 +53,35 @@ void OperatorInput::call(bool robot_enabled, bool autonomous) {
                 place_position_handle.set(0);
 
             break;
+        case 90:
+            tree_handle.try_take_control();
+            tree_handle.set(ReefTree::right);
+            break;
+        case 270:
+            tree_handle.try_take_control();
+            tree_handle.set(ReefTree::left);
+            break;
         default:
             break;
         }
     }
     last_pov = js.GetPOV();
+
+    if(js.GetRawButton(9) != last_vision_mask_button) {
+        if(js.GetRawButton(9)) {
+            vision_mask_handle.try_take_control();
+            vision_mask_handle.set(!vision_mask_handle.get());
+        }
+        last_vision_mask_button = js.GetRawButton(9);
+    }
+
+    if(js.GetRawButton(14)) {
+        ap_translate_handle.try_take_control();
+        ap_translate_handle.set(AutoPilotTranslateMode::reef);
+
+        ap_twist_handle.try_take_control();
+        ap_twist_handle.set(AutoPilotTwistMode::reef);
+    }
 
     watchdog:
     fault_manager.feed_watchdog();

@@ -9,7 +9,11 @@ Tracking::Tracking(SwerveController *swerve_controller):
     swerve_controller(swerve_controller)
 {
     swerve_odometry = new frc::SwerveDriveOdometry<4>(swerve_controller->get_kinematics(), frc::Rotation2d(), swerve_controller->fetch_module_positions());
-    odometry_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "tracking/odometry_pose")).Publish();
+    odometry_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "/tracking/odometry_pose")).Publish();
+    camera_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "/tracking/camera_pose")).Publish();
+    tag_pose_publisher = nt::StructTopic<frc::Pose2d>(nt::GetTopic(nt::GetDefaultInstance(), "/tracking/tag_pose")).Publish();
+
+
     mxp = new studica::AHRS(studica::AHRS::kMXP_SPI, 200);
     mxp->ZeroYaw();
 
@@ -71,6 +75,7 @@ void Tracking::handle_packet(char buf[256]) {
 
     double pitch, roll, yaw;
     double x, y, z;
+    double ex=0, ey =0, ez =0;
     bool hasCamera;
     bool hasRotation;
     double distanceUsed = -1;
@@ -86,6 +91,12 @@ void Tracking::handle_packet(char buf[256]) {
                 memcpy(&z, buf+3+offset+3+(sizeof(double)*2), sizeof(double));
                 offset+=sizeof(double)*3;
                 hasCamera = true;
+            } else if(buf[3+offset+2] == PS_OTI_3D_EULER) { //3d position from camera
+                memcpy(&ex, buf+3+offset+3, sizeof(double));
+                memcpy(&ey, buf+3+offset+3+sizeof(double), sizeof(double));
+                memcpy(&ez, buf+3+offset+3+(sizeof(double)*2), sizeof(double));
+                offset+=sizeof(double)*3;
+                //hasCamera = true;
             } else if (buf[3+offset+2] == PS_OTI_2D_ROTATION) { //2d rotation
                 memcpy(&yaw, buf+3+offset+3, sizeof(double));
                 offset+=8;
@@ -123,11 +134,30 @@ void Tracking::handle_packet(char buf[256]) {
     ui_table->PutNumber("Vision Processing Time", latency);
     ui_table->PutNumber("Vision Composite Time", latency+last_network_latency.count());
     
+    ui_table->PutNumber("ex", ex);
+    ui_table->PutNumber("ey", ey);
+    ui_table->PutNumber("ez", ez);
+
+    ui_table->PutNumber("robot_z", z);
+    ui_table->PutNumber("used_tag_id", tag_id);
+
+    tag_id = tag_id - 1;
+    tag_id = (tag_id > 21)? 21: tag_id;
+    tag_id = (tag_id < 0)? 0: tag_id;
+
+    tag_pose_publisher.Set(field_map[tag_id]);
+
     if(hasCamera && hasRotation) {
         //printf("successfully decoded packet\n");
         //check distance threshold
+
+        camera_pose_publisher.Set(frc::Pose2d(frc::Translation2d(x*1.0_mm, y*1.0_mm), frc::Rotation2d(yaw*1.0_rad)));
+
         if(distanceUsed > 2.8) return;
-        if(!camera_orientation_enabled) return;
+        if(fabs(z) > 35.0) return;
+        if(fabs(ey) > 2.0 || fabs(ex) > 2.0 || fabs(ez) > 2.0) return;
+        if(mask_vision_channel.get()) return;
+        //if(!camera_orientation_enabled) return;
 
         //check z threshold
         //if(z > 1.5) return;
@@ -208,6 +238,22 @@ void Tracking::call(bool robot_enabled, bool autonomous) {
     update_orientation_estimate();
 
     frc::SmartDashboard::PutBoolean("Vision Tracking", (std::chrono::steady_clock::now() - last_camera_pose_update) < std::chrono::milliseconds(60));
+
+    if(mask_vision_channel.get()) {
+        ui_table->PutString("vision_status", "Masked");
+        frc::SmartDashboard::PutString("Vision Status", "Masked");
+    } else if ((std::chrono::steady_clock::now() - last_camera_pose_update) < std::chrono::milliseconds(60)) {
+        ui_table->PutString("vision_status", "Running");
+        frc::SmartDashboard::PutString("Vision Status", "Running");
+    } else {
+        ui_table->PutString("vision_status", "No Tag");
+        frc::SmartDashboard::PutString("Vision Status", "No Tag");
+        ui_table->PutNumber("used_tag_id", -1);
+    }
+
+    if ((std::chrono::steady_clock::now() - last_camera_pose_update) > std::chrono::milliseconds(60)) {
+        ui_table->PutNumber("used_tag_id", -1);
+    }
 
     char buf[256];
     if(recv(sockfd, buf, 256, MSG_DONTWAIT) > 0) {

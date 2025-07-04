@@ -84,9 +84,9 @@ private:
     const units::angle::turn_t rotate_bay_clearance_position = -0.19_tr;
 
     const units::angle::turn_t algae_pickup_position = -0.11_tr;
-    const units::angle::turn_t algae_hold_position = -0.205_tr;
+    const units::angle::turn_t algae_hold_position = -0.215_tr;
 
-    const units::angle::turn_t coral_vertical_a_position = -0.042_tr;
+    const units::angle::turn_t coral_vertical_a_position = -0.06_tr;
     const units::angle::turn_t coral_horizontal_position = 0.00_tr;
     const units::angle::turn_t coral_vertical_b_position = 0.026_tr;
 
@@ -140,7 +140,7 @@ private:
 
     //in mm
     const uint16_t algae_lock_threshold = 100;
-    const uint16_t coral_horizontal_threshold = 205;
+    const uint16_t coral_horizontal_threshold = 218;
     const uint16_t coral_a_threshold = 295;
     const uint16_t coral_hold_threshold = 120;
 

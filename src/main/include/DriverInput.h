@@ -26,6 +26,8 @@ private:
     controlchannel::ControlHandle<AutoPilotTranslateMode> ap_translate_handle;
     controlchannel::ControlHandle<AutoPilotTwistMode> ap_twist_handle;
 
+    controlchannel::ControlHandle<ReefTree> ap_tree_handle;
+
     Tracking *tracking;
 
     bool last_rrel_button = false;
@@ -40,11 +42,12 @@ public:
         controlchannel::ControlHandle<LiftMechanismState> lift_handle,
         controlchannel::ControlHandle<AutoPilotTranslateMode> ap_translate_handle,
         controlchannel::ControlHandle<AutoPilotTwistMode> ap_twist_handle,
+        controlchannel::ControlHandle<ReefTree> ap_tree_handle,
         GlobalFaultManager *global_fm,
         Tracking *tracking):
         planar_handle(planar_handle), twist_handle(twist_handle), intake_handle(intake_handle), lift_handle(lift_handle),
         ap_translate_handle(ap_translate_handle),
-        ap_twist_handle(ap_twist_handle)
+        ap_twist_handle(ap_twist_handle), ap_tree_handle(ap_tree_handle)
         {
             frc::SmartDashboard::PutNumber("launcher_test_angle", 0.7);
             global_fm->register_manager(&fault_manager);

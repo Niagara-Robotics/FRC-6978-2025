@@ -101,7 +101,7 @@ private:
         1.98_tr,
         1.98_tr,
         1.98_tr,
-        3.75_tr,
+        3.85_tr,
     };
 
     const units::angle::turn_t lift_algae_positions[4] = {
@@ -155,7 +155,7 @@ private:
     const units::angle::turn_t shoulder_level_position = 0.25_tr;
 
     const units::angle::turn_t shoulder_pick_position = 0.51_tr;
-    const units::angle::turn_t shoulder_place_position = 0.17_tr;
+    const units::angle::turn_t shoulder_place_position = 0.18_tr;
     const units::angle::turn_t shoulder_algae_position = 0.175_tr;
 
     ctre::phoenix6::StatusSignal<units::angle::turn_t> shoulder_motor_position = shoulder_motor.GetPosition();
@@ -250,6 +250,8 @@ private:
 
     units::angle::turn_t filter_lift_position(units::angle::turn_t input);
     units::angle::turn_t filter_shoulder_position(units::angle::turn_t input);
+
+    int coral_eject_count = 0;
 
     void handle_pick();
     void handle_place();

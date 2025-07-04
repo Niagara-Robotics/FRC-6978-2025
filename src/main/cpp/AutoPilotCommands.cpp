@@ -39,3 +39,43 @@ bool LiftMidCommand::IsFinished() {
     if(lift->get_state() == LiftDetailedState::mid) return true;
     else return false;
 }
+
+void UnmaskVisionCommand::Initialize() {
+    mask_handle.try_take_control();
+    mask_handle.set(false);
+}
+
+void UnmaskVisionCommand::Execute() {
+    
+}
+
+void UnmaskVisionCommand::End(bool interrupted) {
+    
+}
+
+bool UnmaskVisionCommand::IsFinished() {
+    return !mask_handle.get();
+}
+
+void AutoAlignLeftCommand::Initialize() {
+    tree_handle.try_take_control();
+    tree_handle.set(ReefTree::right);
+
+    twist_handle.try_take_control();
+    twist_handle.set(AutoPilotTwistMode::reef);
+
+    lateral_handle.try_take_control();
+    lateral_handle.set(AutoPilotTranslateMode::reef);
+}
+
+void AutoAlignLeftCommand::Execute() {
+    
+}
+
+void AutoAlignLeftCommand::End(bool interrupted) {
+    
+}
+
+bool AutoAlignLeftCommand::IsFinished() {
+    return auto_pilot->is_finished();
+}

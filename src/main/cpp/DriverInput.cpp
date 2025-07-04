@@ -101,21 +101,37 @@ void DriverInput::call(bool robot_enabled, bool autonomous) {
     last_rrel_button = js.GetRawButton(10);
 
 
-    if(js.GetRawButton(9)) {
+    if(js.GetRawButton(1)) {
         ap_translate_handle.try_take_control();
         ap_translate_handle.set(AutoPilotTranslateMode::reef);
 
         ap_twist_handle.try_take_control();
         ap_twist_handle.set(AutoPilotTwistMode::reef);
+        
+        ap_tree_handle.try_take_control();
+        ap_tree_handle.set(ReefTree::left);
+    }
+
+    if(js.GetRawButton(3)) {
+        ap_translate_handle.try_take_control();
+        ap_translate_handle.set(AutoPilotTranslateMode::reef);
+
+        ap_twist_handle.try_take_control();
+        ap_twist_handle.set(AutoPilotTwistMode::reef);
+
+        ap_tree_handle.try_take_control();
+        ap_tree_handle.set(ReefTree::right);
     }
 
     frc::SmartDashboard::PutBoolean("input_robot_relative", robot_relative);
 
-    if(js.GetRawButton(1)) {
+    
+
+    if(js.GetRawButton(9)) {
         intake_handle.try_take_control();
         intake_handle.set(intake::IntakeAction::pickup_algae);
     }
-    if(js.GetRawButton(3)) {
+    if(js.GetRawButton(5)) {
         intake_handle.try_take_control();
         intake_handle.set(intake::IntakeAction::eject_algae);
     }

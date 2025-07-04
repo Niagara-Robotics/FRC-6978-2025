@@ -33,6 +33,7 @@ enum class AutoPilotTwistMode {
 enum class AutoPilotTranslateMode {
     none,
     reef,
+    reef_long,
     planner
 };
 
@@ -85,6 +86,22 @@ public:
     bool IsFinished() override;
 };
 
+class UnmaskVisionCommand: public frc2::CommandHelper<frc2::Command, UnmaskVisionCommand> {
+    Lift *lift;
+    controlchannel::ControlHandle<bool> mask_handle;
+
+public:
+    UnmaskVisionCommand(Tracking *tracking): 
+        mask_handle(tracking->mask_vision_channel.get_handle()){};
+
+    void Initialize() override;
+    void Execute() override;
+    void End(bool interrupted) override;
+    bool IsFinished() override;
+};
+
+
+
 class AutoPilot: public Task, frc2::Subsystem
 {
 private:
@@ -94,10 +111,13 @@ private:
     controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle;
 
     controlchannel::ControlHandle<LiftMechanismState> lift_handle;
+    controlchannel::ControlHandle<bool> vision_mask_handle;
 
     Tracking *tracking;
     SwerveController *swerve_controller;
     Lift *lift;
+
+    nt::StructPublisher<frc::Pose2d> target_pose_publisher;
 
     LateralSwerveRequest point_proportional(frc::Pose2d target, frc::Pose2d current);
 
@@ -127,11 +147,18 @@ private:
         frc::Pose2d(160.39_in, 186.83_in, frc::Rotation2d(120_deg)), //AB
     };
 
-    units::length::meter_t whisker_clear_distance = 21_in;
-    units::length::meter_t whisker_strafe_distance = 7_in;
+    units::length::meter_t whisker_clear_distance = 15_in;
+    units::length::meter_t whisker_long_distance = 18.5_in;
+    units::length::meter_t whisker_strafe_distance = 7.5_in;
+    units::length::meter_t side_offset = 1.5_in;
+
+    double delta = 0;
 
     bool auto_initialized = false;
     bool auto_running = false;
+
+    AutoPilotTranslateMode last_lateral_mode = AutoPilotTranslateMode::none;
+    AutoPilotTwistMode last_twist_mode = AutoPilotTwistMode::none;
 
     FaultManager fault_manager = FaultManager("AutoPilot");
 
@@ -167,5 +194,28 @@ public:
     void set_rotation_mode(AutoPilotTwistMode mode);
     void set_hdg_target(units::angle::radian_t target);
 
+    bool is_finished();
+
     ~AutoPilot(){};
+};
+
+class AutoAlignLeftCommand: public frc2::CommandHelper<frc2::Command, AutoAlignLeftCommand> {
+    AutoPilot *auto_pilot;
+
+    controlchannel::ControlHandle<AutoPilotTranslateMode> lateral_handle;
+    controlchannel::ControlHandle<AutoPilotTwistMode> twist_handle;
+    controlchannel::ControlHandle<ReefTree> tree_handle;
+
+public:
+    AutoAlignLeftCommand(AutoPilot *auto_pilot): 
+        auto_pilot(auto_pilot), 
+        lateral_handle(auto_pilot->lateral_mode_channel.get_handle()),
+        twist_handle(auto_pilot->twist_mode_channel.get_handle()),
+        tree_handle(auto_pilot->reef_tree_channel.get_handle()){};
+
+
+    void Initialize() override;
+    void Execute() override;
+    void End(bool interrupted) override;
+    bool IsFinished() override;
 };

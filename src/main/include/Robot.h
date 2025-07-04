@@ -63,6 +63,7 @@ class Robot: frc::RobotBase {
         lift.target_mechanism_state.get_handle(),
         auto_pilot.lateral_mode_channel.get_handle(),
         auto_pilot.twist_mode_channel.get_handle(),
+        auto_pilot.reef_tree_channel.get_handle(),
         global_fault_manager,
         &tracking
     );
@@ -73,6 +74,9 @@ class Robot: frc::RobotBase {
         intake.intake_action_channel.get_handle(),
         lift.target_mechanism_state.get_handle(),
         lift.target_place_position.get_handle(),
+        auto_pilot.reef_tree_channel.get_handle(),
+        auto_pilot.lateral_mode_channel.get_handle(),
+        auto_pilot.twist_mode_channel.get_handle(),
         global_fault_manager,
         &tracking
     );

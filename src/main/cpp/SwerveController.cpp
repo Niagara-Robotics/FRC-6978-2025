@@ -11,7 +11,7 @@
 
 SwerveController::SwerveController(GlobalFaultManager *global_fm)
 {
-    module_positions_publisher = nt::StructArrayTopic<frc::SwerveModulePosition>(nt::GetTopic(nt::GetDefaultInstance(), "swerve/module_positions")).Publish();
+    module_positions_publisher = nt::StructArrayTopic<frc::SwerveModulePosition>(nt::GetTopic(nt::GetDefaultInstance(), "/swerve/module_positions")).Publish();
     for (size_t i = 0; i < 4; i++) {
         global_fm->register_manager(&modules[i]->fault_manager);
     }
@@ -67,11 +67,15 @@ void SwerveController::call(bool robot_enabled, bool autonomous) {
         if(robot_enabled) {
             modules[i]->apply(target_states[i]);
             //modules[i]->test_couple();
+            
         }
         else  {
             modules[i]->idle();
         }
+        if(!skip_safety) modules[i]->fault_check();
     }
+
+    skip_safety = !skip_safety;
 
     module_positions_publisher.Set(last_reported_positions);
 

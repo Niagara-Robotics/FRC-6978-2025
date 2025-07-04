@@ -9,6 +9,7 @@
 
 #include "Lift.h"
 #include "Intake.h"
+#include "AutoPilot.h"
 
 class OperatorInput : public Task
 {
@@ -17,14 +18,22 @@ private:
     controlchannel::ControlHandle<LateralSwerveRequest> planar_handle;
     controlchannel::ControlHandle<units::angular_velocity::radians_per_second_t> twist_handle;
 
+    controlchannel::ControlHandle<AutoPilotTranslateMode> ap_translate_handle;
+    controlchannel::ControlHandle<AutoPilotTwistMode> ap_twist_handle;
+
     controlchannel::ControlHandle<intake::IntakeAction> intake_handle;
 
     controlchannel::ControlHandle<LiftMechanismState> lift_handle;
     controlchannel::ControlHandle<int> place_position_handle;
+    controlchannel::ControlHandle<ReefTree> tree_handle;
+
+    controlchannel::ControlHandle<bool> vision_mask_handle;
 
     Tracking *tracking;
 
     int last_pov = -1;
+
+    bool last_vision_mask_button = false;
 
     FaultManager fault_manager = FaultManager("OperatorInput");
 public:
@@ -34,6 +43,9 @@ public:
         controlchannel::ControlHandle<intake::IntakeAction> intake_handle,
         controlchannel::ControlHandle<LiftMechanismState> lift_handle,
         controlchannel::ControlHandle<int> place_position_handle,
+        controlchannel::ControlHandle<ReefTree> tree_handle,
+        controlchannel::ControlHandle<AutoPilotTranslateMode> ap_translate_handle,
+        controlchannel::ControlHandle<AutoPilotTwistMode> ap_twist_handle,
         GlobalFaultManager *global_fm,
         Tracking *tracking):
         planar_handle(planar_handle), 
@@ -41,7 +53,9 @@ public:
         tracking(tracking), 
         intake_handle(intake_handle), 
         lift_handle(lift_handle), 
-        place_position_handle(place_position_handle)
+        place_position_handle(place_position_handle),
+        tree_handle(tree_handle),
+        vision_mask_handle(tracking->mask_vision_channel.get_handle()), ap_translate_handle(ap_translate_handle), ap_twist_handle(ap_twist_handle)
         {
             frc::SmartDashboard::PutNumber("launcher_test_angle", 0.7);
             global_fm->register_manager(&fault_manager);

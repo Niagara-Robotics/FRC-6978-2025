@@ -230,7 +230,7 @@ void Intake::call(bool robot_enabled, bool autonomous) {
 
     //safety checks
     
-    if(!rotate_motor.IsConnected(450_ms) || !rotate_motor.IsSafetyEnabled()) {
+    if(!rotate_motor.IsConnected(550_ms) || !rotate_motor.IsSafetyEnabled()) {
         rotate_motor.Disable();
         rotate_calibration_state = RotateCalibrationState::uncalibrated;
         fault_manager.add_fault(Fault(true, FaultIdentifier::intakeRotateUnreachable));
@@ -238,9 +238,16 @@ void Intake::call(bool robot_enabled, bool autonomous) {
     }
 
     if(fault_manager.get_fault(FaultIdentifier::intakeRotateUnreachable, nullptr)) {
-        if(rotate_motor.IsConnected(450_ms)) {
+        if(rotate_motor.IsConnected(550_ms)) {
             fault_manager.clear_fault(Fault(false, FaultIdentifier::intakeRotateUnreachable));
             configure_rotate_motor();
+            if (robot_enabled) {
+                rotate_motor.SetPosition(rotate_encoder_position.GetValue());
+                enable_rotate_softlimit();
+                rotate_calibration_state = RotateCalibrationState::finished;
+                printf("CONTINGENCY Calibrated intake %f\n", rotate_encoder_position.GetValueAsDouble());
+                fault_manager.add_fault(Fault(true, FaultIdentifier::intakeRotateCalibrationTimeout));
+            }
         }
         return;
     }
